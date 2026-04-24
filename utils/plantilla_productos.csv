@@ -1,0 +1,65 @@
+sku,name,description,category_name,cost,price,tax_rate,barcode
+PROD-008,Estación de energia,Estación de energia portatil 1200 w,Estaciones de Energia,460.00,500.00,8.69565217391304,7890123456796
+PROD-009,REFLECTOR LED electrico 50W,REFLECTOR LED electrico 50W,Luminarias,7.90,10.00,26.5822784810126,7890123456797
+PROD-010,REFLECTOR LED electrico 100W,REFLECTOR LED electrico 100W,Luminarias,17.25,20.00,15.9420289855073,7890123456798
+PROD-011,Luminaria via solar 90w 10AH12w,Luminaria via solar 90w 10AH12w,Luminarias,28.00,32.00,14.2857142857143,7890123456799
+PROD-012,Luminaria via solar 120w 12AH15W,Luminaria via solar 120w 12AH15W,Luminarias,38.00,42.00,10.5263157894737,7890123456800
+PROD-013,Base de luminarias via solar,Base de luminarias via solar,Luminarias,1.00,1.00,0,7890123456801
+PROD-014,Lampara vial 90w,Lámpara solar para iluminación vial 90W,Luminarias,28.00,32.00,14.2857142857143,7890123456802
+PROD-015,Reflector Solar 100W,Reflector con panel solar integrado 100W,Luminarias,30.50,35.00,14.7540983606557,7890123456803
+PROD-016,Reflector Solar 200W,Reflector con panel solar integrado 200W,Luminarias,39.00,45.00,15.3846153846154,7890123456804
+PROD-017,Bombillo 9w recargable,Bombillo LED 9W recargable con batería interna,Iluminacion,1.60,2.00,25.0,7890123456805
+PROD-019,Inversor 3kw 24v 110v Elfo,Inversor de onda pura 3kW 24V a 110V marca Elfo,Inversores,495.00,550.00,11.1111111111111,7890123456807
+PROD-020,Estacion Lvyuan M9 Elfo,Estación de energía portátil Lvyuan M9 Elfo,Estaciones de Energia,450.00,500.00,11.1111111111111,7890123456808
+PROD-021,Bateria Dumfume 12v 100Ah,Batería LiFePO4 Dumfume 12V 100Ah,Baterias,290.00,320.00,10.3448275862069,7890123456809
+PROD-022,Tubo Led 18w vidrio,Tubo LED 18W de vidrio T8,Iluminacion,990.00,1100.00,11.1111111111111,7890123456810
+PROD-023,Tubo Led 9w vidrio,Tubo LED 9W de vidrio T8,Iluminacion,540.00,600.00,11.1111111111111,7890123456811
+PROD-024,Canaletas,Canaleta plástica para cableado eléctrico,Accesorios Electricos,1800.00,2000.00,11.1111111111111,7890123456812
+PROD-025,Base de Tubo Led 9w,Base porta tubo LED 9W,Iluminacion,810.00,900.00,11.1111111111111,7890123456813
+PROD-026,Varilla (fina),Varilla de aterramiento fina,Accesorios Electricos,36.00,40.00,11.1111111111111,7890123456814
+PROD-027,Cable solar positivo,Cable solar rojo positivo (por metro),Cableado,2.40,4.00,66.6666666666667,7890123456815
+PROD-028,Cable solar negativo,Cable solar negro negativo (por metro),Cableado,2.40,4.00,66.6666666666667,7890123456816
+PROD-029,SPD DC 2p 63A EARU,Supresor de sobretensión DC 2 polos 63A EARU,Protecciones Electricas,18.00,20.00,11.1111111111111,7890123456817
+PROD-030,Disyuntor 200A,Disyuntor termomagnético 200A,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456818
+PROD-031,XT60i,Conector XT60i para baterías,Accesorios Electricos,9.00,10.00,11.1111111111111,7890123456819
+PROD-032,Doble Tiro 3p 63A GEYA,Interruptor de doble tiro 3 polos 63A GEYA,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456820
+PROD-033,Doble Tiro 2p 63A GEYA,Interruptor de doble tiro 2 polos 63A GEYA,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456821
+PROD-034,Protector 2p 63A 110/220 1 Fase GEYA,Protector eléctrico 2 polos 63A 110/220V 1 fase GEYA,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456822
+PROD-035,Fusible 2p 32A EARU (DC),Fusible DC 2 polos 32A EARU,Protecciones Electricas,9.00,10.00,11.1111111111111,7890123456823
+PROD-036,SPD AC 2p 275VAC GEYA,Supresor de sobretensión AC 2 polos 275VAC GEYA,Protecciones Electricas,18.00,20.00,11.1111111111111,7890123456824
+PROD-037,SPD AC 2p 385VAC TOMZN 10-20kA,Supresor de sobretensión AC 2p 385VAC TOMZN 10-20kA,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456825
+PROD-038,SPD AC 2p 385VAC TOMZN 20-40kA,Supresor de sobretensión AC 2p 385VAC TOMZN 20-40kA,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456826
+PROD-039,SPD AC 2p 385VAC TOMZN 30-60kA,Supresor de sobretensión AC 2p 385VAC TOMZN 30-60kA,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456827
+PROD-040,Breaker DC 2p 63A TDNK,Breaker DC 2 polos 63A TDNK,Protecciones Electricas,13.50,15.00,11.1111111111111,7890123456828
+PROD-041,SPD DC 2p 500VDC TDNK,Supresor de sobretensión DC 2 polos 500VDC TDNK,Protecciones Electricas,18.00,20.00,11.1111111111111,7890123456829
+PROD-042,Breaker DC 2p 25A TDNK,Breaker DC 2 polos 25A TDNK,Protecciones Electricas,10.80,12.00,11.1111111111111,7890123456830
+PROD-043,SPD AC 1p+N 275VAC GEYA,Supresor de sobretensión AC 1P+N 275VAC GEYA,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456831
+PROD-044,Protector 2p 80A 110/220 1 fase GEYA,Protector eléctrico 2 polos 80A 110/220V 1 fase GEYA,Protecciones Electricas,27.00,30.00,11.1111111111111,7890123456832
+PROD-045,Protector 1p+N 110/220 40A Zeneogk,Protector 1P+N 40A 110/220V Zeneogk,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456833
+PROD-046,Protector 1p+N 110/220 63A Zeneogk,Protector 1P+N 63A 110/220V Zeneogk,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456834
+PROD-047,Protector 2p 80A (L y N) TOMZN 220v,Protector 2 polos 80A L y N TOMZN 220V,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456835
+PROD-048,Protector 2p (L y N) EARU 110/220v,Protector 2 polos L y N EARU 110/220V,Protecciones Electricas,22.50,25.00,11.1111111111111,7890123456836
+PROD-049,Breakera 16 vias,Panel de distribución breakera 16 vías,Protecciones Electricas,8000.00,10000.00,25.0,7890123456837
+PROD-050,Breakera 6 vias,Panel de distribución breakera 6 vías,Protecciones Electricas,5000.00,8000.00,60.0,7890123456838
+PROD-051,Caja de Pase,Caja de paso para instalaciones eléctricas,Accesorios Electricos,2250.00,2500.00,11.1111111111111,7890123456839
+PROD-052,Inversor 4kw 24v 110v Sumry,Inversor de onda pura 4kW 24V a 110V marca Sumry,Inversores,460.00,550.00,19.5652173913043,7890123456840
+PROD-053,Watimetro,Medidor de potencia digital (vatímetro),Electronica,18.00,20.00,11.1111111111111,7890123456841
+PROD-054,Protector Trifasico Geya 3p+N,Protector trifásico GEYA 3P+N,Protecciones Electricas,72.00,80.00,11.1111111111111,7890123456842
+PROD-055,Pareja MC4,Conectores MC4 macho/hembra para panel solar,Accesorios Electricos,2.70,3.00,11.1111111111111,7890123456843
+PROD-056,Teipe negro,Cinta aislante negra,Accesorios Electricos,500.00,600.00,20.0,7890123456844
+PROD-057,Puntas 35-10,Terminales de cable 35mm² ojal 10mm,Accesorios Electricos,1.35,1.50,11.1111111111111,7890123456845
+PROD-058,Perro para varilla fina de Aterramiento,Grapa tipo perro para varilla de aterramiento fina,Accesorios Electricos,0.00,0.00,0,7890123456846
+PROD-059,Puntas 35-8,Terminales de cable 35mm² ojal 8mm,Accesorios Electricos,1.35,1.50,11.1111111111111,7890123456847
+PROD-060,Voltimetro,Voltímetro digital de panel,Electronica,4.50,5.00,11.1111111111111,7890123456848
+PROD-061,Puntas 25-8,Terminales de cable 25mm² ojal 8mm,Accesorios Electricos,1.35,1.50,11.1111111111111,7890123456849
+PROD-062,Bateria Dumfume 24v 100Ah,Batería LiFePO4 Dumfume 24V 100Ah,Baterias,600.00,650.00,8.33333333333333,7890123456850
+PROD-063,Power Bank 30000mAh,Power bank portátil 30000mAh,Electronica,25.00,30.00,20.0,7890123456851
+PROD-064,Audifonos inalambrico (caja verde),Audífonos inalámbricos Bluetooth caja verde,Electronica,4000.00,5000.00,25.0,7890123456852
+PROD-065,Cascos (simples),Cascos de seguridad simples,Seguridad,25.00,30.00,20.0,7890123456853
+PROD-066,Samsung A16 con cover y cargador,Samsung Galaxy A16 con cover protector y cargador incluido,Electronica,150.00,175.00,16.6666666666667,7890123456854
+PROD-067,Estacion Oupes,Estación de energía portátil Oupes,Estaciones de Energia,700.00,750.00,7.14285714285714,7890123456855
+PROD-068,Estante blanco,Estante de almacenamiento blanco,Mobiliario,100.00,120.00,20.0,7890123456856
+PROD-069,Panel Elfo 590w,Panel solar monocristalino Elfo 590W,Paneles Solares,120.00,180.00,50.0,7890123456857
+PROD-070,Soportes para 1 panel,Soportes de montaje para 1 panel solar,Accesorios Electricos,65.00,70.00,7.69230769230769,7890123456858
+PROD-071,Inversor Must 3kw 24v 110/220v,Inversor de onda pura Must 3kW 24V 110/220V,Inversores,600.00,650.00,8.33333333333333,7890123456859
+PROD-072,Bateria Ecoworthy 24v 100Ah,Batería LiFePO4 Ecoworthy 24V 100Ah,Baterias,585.00,650.00,11.1111111111111,7890123456860
