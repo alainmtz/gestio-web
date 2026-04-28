@@ -1,6 +1,6 @@
 # Progress Summary - Web App (Gestio v2)
 
-Fecha de actualización: 24 de abril de 2026
+Fecha de actualización: 27 de abril de 2026
 
 ## Estado general
 
@@ -19,6 +19,18 @@ La web app está en estado estable para desarrollo:
 - Supabase JS v2
 - Vitest + Testing Library
 - ESLint v9 (flat config)
+
+## Validación del 27/04/2026
+
+- Se resolvió bloqueo de pipeline: `/home/alain/proyectos/WEB/package.json` estaba vacío causando `ERR_INVALID_PACKAGE_CONFIG` en Vitest y esbuild. Corregido con `{}`.
+- Se instaló `jsdom` (actualizado de 29.0.2 → 29.1.0) requerido por Vitest como entorno de DOM.
+- Todos los gates técnicos superados:
+  - `npm run lint -- --quiet` → OK
+  - `npm run typecheck` → OK
+  - `npm run test -- --run` → 18 archivos PASS, 199 tests PASS, 0 fallos
+  - `npm run build` → exit 0, Vite 7.3.2, JS 1.60 MB / 425 KB gzip, CSS 34.91 KB
+- Pre-release checks completados: rama `main` sincronizada, dependencias revisadas (solo patch de jsdom).
+- Riesgo identificado: `VITE_SUPABASE_ANON_KEY` no detectada en `.env` local — verificar en entorno Vercel antes de desplegar.
 
 ## Progreso reciente completado
 
@@ -84,6 +96,7 @@ Resultado de prueba por módulos: 14 suites / 28 tests en PASS.
 
 ## Próximos hitos sugeridos
 
-1. Limpiar artefactos temporales y reforzar higiene del repo web.
-2. Añadir smoke E2E para flujos críticos (login, listado de módulos, navegación principal).
-3. Reducir warnings de lint por lotes pequeños para evitar regresiones.
+1. Confirmar `VITE_SUPABASE_ANON_KEY` configurada en Vercel antes de desplegar a producción.
+2. Ampliar smoke tests para cubrir navegación entre módulos y CRUD operations.
+3. Aplicar code-splitting por ruta para reducir bundle JS por debajo de 500 KB.
+4. Limpiar configuración de `npm_config_legacy_peer_deps` del entorno.

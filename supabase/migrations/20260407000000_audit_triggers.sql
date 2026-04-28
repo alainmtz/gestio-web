@@ -146,19 +146,6 @@ CREATE TRIGGER cash_registers_audit_delete
     AFTER DELETE ON public.cash_registers
     FOR EACH ROW EXECUTE FUNCTION public.capture_audit_changes();
 
--- Consignments
-CREATE TRIGGER consignments_audit_insert
-    AFTER INSERT ON public.consignments
-    FOR EACH ROW EXECUTE FUNCTION public.capture_audit_changes();
-
-CREATE TRIGGER consignments_audit_update
-    AFTER UPDATE ON public.consignments
-    FOR EACH ROW EXECUTE FUNCTION public.capture_audit_changes();
-
-CREATE TRIGGER consignments_audit_delete
-    AFTER DELETE ON public.consignments
-    FOR EACH ROW EXECUTE FUNCTION public.capture_audit_changes();
-
 -- Stores
 CREATE TRIGGER stores_audit_insert
     AFTER INSERT ON public.stores
