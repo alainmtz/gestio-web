@@ -26,12 +26,15 @@ import {
   Shield,
   RefreshCw,
   ShoppingCart,
+  X,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface SidebarProps {
   collapsed: boolean
   onCollapsedChange: (collapsed: boolean) => void
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 const mainNavItems = [
@@ -91,7 +94,7 @@ const mainNavItems = [
   },
 ]
 
-export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
+export function Sidebar({ collapsed, onCollapsedChange, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation()
   const { permissions } = useAuthStore()
   const isAdmin = permissions.includes('SETTINGS_ORG')
@@ -111,11 +114,19 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 flex h-full flex-col border-r bg-card transition-all duration-300',
-        collapsed ? 'w-[70px]' : 'w-[260px]'
+        collapsed ? 'w-[70px]' : 'w-[260px]',
+        'hidden lg:flex',
+        mobileOpen && 'flex z-50 w-[260px]'
       )}
     >
-      <div className="flex h-16 items-center border-b px-4">
-        {!collapsed && (
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        {collapsed ? (
+          <Link to="/dashboard" className="mx-auto">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Package className="h-5 w-5 text-primary-foreground" />
+            </div>
+          </Link>
+        ) : (
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Package className="h-5 w-5 text-primary-foreground" />
@@ -123,12 +134,10 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
             <span className="text-lg font-bold">Gestio</span>
           </Link>
         )}
-        {collapsed && (
-          <Link to="/dashboard" className="mx-auto">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Package className="h-5 w-5 text-primary-foreground" />
-            </div>
-          </Link>
+        {mobileOpen && (
+          <Button variant="ghost" size="icon" onClick={onMobileClose}>
+            <X className="h-5 w-5" />
+          </Button>
         )}
       </div>
 

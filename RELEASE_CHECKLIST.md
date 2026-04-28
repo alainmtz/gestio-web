@@ -1,7 +1,7 @@
 # Release Checklist - Web App
 
 Fecha de creación: 24 de abril de 2026
-Última validación: 28 de abril de 2026
+Última validación: 28 de abril de 2026 (actualizado)
 
 ## Pre-release
 
@@ -35,6 +35,7 @@ Fecha de creación: 24 de abril de 2026
 - Tienda demo insertada ("Tienda Principal", código T001)
 - Política RLS de `stores` relaja para permitir INSERT a cualquier miembro activo (antes solo admins)
 - Tabla `stores` tenía 0 rows; ahora tiene datos
+- Sidebar: diseño responsivo con overlay móvil, submenú expande en subrutas
 
 ## Riesgos conocidos
 
