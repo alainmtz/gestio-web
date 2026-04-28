@@ -96,8 +96,14 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
   const { permissions } = useAuthStore()
   const isAdmin = permissions.includes('SETTINGS_ORG')
 
-  const isActive = (href: string) => {
+  const isActive = (href: string, submenu?: { href: string }[]) => {
     if (href === '/dashboard') return location.pathname === '/dashboard'
+    
+    // Check if any submenu item matches current path
+    if (submenu) {
+      return submenu.some(sub => location.pathname.startsWith(sub.href))
+    }
+    
     return location.pathname.startsWith(href)
   }
 
@@ -132,7 +138,7 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
             <div key={item.href}>
               <Link to={item.href}>
                 <Button
-                  variant={isActive(item.href) ? 'secondary' : 'ghost'}
+                  variant={isActive(item.href, item.submenu) ? 'secondary' : 'ghost'}
                   className={cn(
                     'w-full justify-start gap-3',
                     collapsed && 'justify-center px-2'
@@ -142,7 +148,7 @@ export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
                   {!collapsed && <span>{item.title}</span>}
                 </Button>
               </Link>
-              {!collapsed && item.submenu && isActive(item.href) && (
+              {!collapsed && item.submenu && isActive(item.href, item.submenu) && (
                 <div className="ml-6 mt-1 space-y-1 border-l-2 border-muted pl-2">
                   {item.submenu.map((subItem) => (
                     <Link key={subItem.href} to={subItem.href}>
