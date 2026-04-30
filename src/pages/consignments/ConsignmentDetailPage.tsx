@@ -6,7 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Loader2, ShoppingCart, Undo } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ArrowLeft, Loader2, ShoppingCart, Undo, DollarSign, FileText } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
@@ -34,11 +49,27 @@ interface ConsignmentStockRow {
   store?: { name: string }
 }
 
-const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
+interface ConsignmentMovement {
+  id: string
+  type: string
+  quantity: number
+  user_id?: string
+  created_at: string
+}
+
+const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'success' }> = {
   ACTIVE:    { label: 'Activa',     variant: 'default' },
   PARTIAL:   { label: 'Parcial',    variant: 'secondary' },
-  COMPLETED: { label: 'Completada', variant: 'secondary' },
+  COMPLETED: { label: 'Completada', variant: 'success' },
   CANCELLED: { label: 'Cancelada',  variant: 'destructive' },
+  LIQUIDATED:{ label: 'Liquidada',  variant: 'success' },
+}
+
+const movementTypeLabels: Record<string, string> = {
+  SALE: 'Venta',
+  RETURN: 'Devolución',
+  LIQUIDATION: 'Liquidación',
+  CANCELLATION: 'Cancelación',
 }
 
 export function ConsignmentDetailPage() {
@@ -51,6 +82,7 @@ export function ConsignmentDetailPage() {
   const [saleQuantity, setSaleQuantity] = useState('')
   const [showReturnDialog, setShowReturnDialog] = useState(false)
   const [returnQuantity, setReturnQuantity] = useState('')
+  const [showLiquidateDialog, setShowLiquidateDialog] = useState(false)
 
   const { data: row, isLoading } = useQuery({
     queryKey: ['consignment_stock', id],
@@ -72,12 +104,35 @@ export function ConsignmentDetailPage() {
     enabled: !!id,
   })
 
+  const { data: movements } = useQuery({
+    queryKey: ['consignment_movements', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('consignment_movements')
+        .select('*')
+        .eq('consignment_stock_id', id)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data || []) as ConsignmentMovement[]
+    },
+    enabled: !!id,
+  })
+
   const registerSaleMutation = useMutation({
     mutationFn: async (qty: number) => {
       const newSold = (row!.quantity_sold || 0) + qty
+      const available = (row!.quantity_sent || 0) - (row!.quantity_sold || 0) - (row!.quantity_returned || 0)
+      
+      let newStatus = row!.status
+      if (newSold >= (row!.quantity_sent || 0) - (row!.quantity_returned || 0)) {
+        newStatus = 'COMPLETED'
+      } else if (newSold > 0) {
+        newStatus = 'PARTIAL'
+      }
+
       const { error } = await supabase
         .from('consignment_stock')
-        .update({ quantity_sold: newSold })
+        .update({ quantity_sold: newSold, status: newStatus })
         .eq('id', id)
       if (error) throw error
 
@@ -93,6 +148,7 @@ export function ConsignmentDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
+      queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
       toast({ title: 'Venta registrada', variant: 'default' })
       setShowSaleDialog(false)
       setSaleQuantity('')
@@ -105,9 +161,17 @@ export function ConsignmentDetailPage() {
   const registerReturnMutation = useMutation({
     mutationFn: async (qty: number) => {
       const newReturned = (row!.quantity_returned || 0) + qty
+      const newSold = row!.quantity_sold || 0
+      const total = row!.quantity_sent || 0
+      
+      let newStatus = row!.status
+      if (newReturned + newSold >= total) {
+        newStatus = 'COMPLETED'
+      }
+
       const { error } = await supabase
         .from('consignment_stock')
-        .update({ quantity_returned: newReturned })
+        .update({ quantity_returned: newReturned, status: newStatus })
         .eq('id', id)
       if (error) throw error
 
@@ -123,9 +187,56 @@ export function ConsignmentDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
+      queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
       toast({ title: 'Devolución registrada', variant: 'default' })
       setShowReturnDialog(false)
       setReturnQuantity('')
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    },
+  })
+
+  const liquidateMutation = useMutation({
+    mutationFn: async () => {
+      if (!row) return
+
+      const total = row.quantity_sent || 0
+      const sold = row.quantity_sold || 0
+      const returned = row.quantity_returned || 0
+      const pending = total - sold - returned
+
+      if (pending > 0) {
+        // Auto-return pending items
+        const newReturned = returned + pending
+        const { error: updateError } = await supabase
+          .from('consignment_stock')
+          .update({ quantity_returned: newReturned, status: 'LIQUIDATED' })
+          .eq('id', id)
+        if (updateError) throw updateError
+      } else {
+        const { error } = await supabase
+          .from('consignment_stock')
+          .update({ status: 'LIQUIDATED' })
+          .eq('id', id)
+        if (error) throw error
+      }
+
+      await supabase.from('consignment_movements').insert({
+        consignment_stock_id: id,
+        organization_id: row.organization_id,
+        type: 'LIQUIDATION',
+        product_id: row.product_id,
+        quantity: sold,
+        user_id: useAuthStore.getState().user?.id,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
+      queryClient.invalidateQueries({ queryKey: ['consignments'] })
+      queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
+      toast({ title: 'Consignación liquidada', variant: 'default' })
+      setShowLiquidateDialog(false)
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -155,6 +266,7 @@ export function ConsignmentDetailPage() {
 
   const available = (row.quantity_sent || 0) - (row.quantity_sold || 0) - (row.quantity_returned || 0)
   const status = statusLabels[row.status] || { label: row.status, variant: 'secondary' as const }
+  const isCompleted = ['COMPLETED', 'LIQUIDATED', 'CANCELLED'].includes(row.status)
 
   return (
     <div className="space-y-6">
@@ -173,7 +285,7 @@ export function ConsignmentDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {hasPermission(PERMISSIONS.CONSIGNMENT_EDIT) && (
+          {hasPermission(PERMISSIONS.CONSIGNMENT_EDIT) && !isCompleted && (
             <>
               <Button variant="outline" onClick={() => setShowReturnDialog(true)}>
                 <Undo className="mr-2 h-4 w-4" />
@@ -185,10 +297,16 @@ export function ConsignmentDetailPage() {
               </Button>
             </>
           )}
+          {hasPermission(PERMISSIONS.CONSIGNMENT_LIQUIDATE) && !isCompleted && (
+            <Button variant="secondary" onClick={() => setShowLiquidateDialog(true)}>
+              <DollarSign className="mr-2 h-4 w-4" />
+              Liquidar
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Enviado</div>
@@ -198,58 +316,118 @@ export function ConsignmentDetailPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Vendido</div>
-            <div className="text-2xl font-bold">{row.quantity_sold}</div>
+            <div className="text-2xl font-bold text-green-600">{row.quantity_sold}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Devuelto</div>
-            <div className="text-2xl font-bold">{row.quantity_returned}</div>
+            <div className="text-2xl font-bold text-orange-600">{row.quantity_returned}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Disponible</div>
-            <div className="text-2xl font-bold">{available}</div>
+            <div className="text-2xl font-bold text-blue-600">{available}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Comisión</div>
+            <div className="text-2xl font-bold">{row.commission_rate}%</div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalles</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Producto</span>
-            <span>{row.product?.name} ({row.product?.sku})</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Tipo</span>
-            <span>{row.partner_type === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Comisión</span>
-            <span>{row.commission_rate}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Estado</span>
-            <Badge variant={status.variant}>{status.label}</Badge>
-          </div>
-          {row.notes && (
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalles</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Notas</span>
-              <span>{row.notes}</span>
+              <span className="text-muted-foreground">Producto</span>
+              <span>{row.product?.name} ({row.product?.sku})</span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tipo</span>
+              <span>{row.partner_type === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tienda</span>
+              <span>{row.store?.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Estado</span>
+              <Badge variant={status.variant}>{status.label}</Badge>
+            </div>
+            {row.notes && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Notas</span>
+                <span>{row.notes}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {showSaleDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg w-[360px] space-y-4">
-            <h2 className="text-xl font-bold">Registrar Venta</h2>
-            <p className="text-sm text-muted-foreground">Disponible: {available}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Historial de Movimientos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {movements && movements.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Cantidad</TableHead>
+                    <TableHead>Fecha</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {movements.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {movementTypeLabels[m.type] || m.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{m.quantity}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(m.created_at).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No hay movimientos registrados
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sale Dialog */}
+      <Dialog open={showSaleDialog} onOpenChange={setShowSaleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Venta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Disponible para vender: <span className="font-medium text-green-600">{available} uds</span>
+            </div>
             <div className="space-y-2">
               <Label>Cantidad</Label>
               <Input
@@ -261,25 +439,33 @@ export function ConsignmentDetailPage() {
                 placeholder="0"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowSaleDialog(false)}>Cancelar</Button>
-              <Button
-                onClick={() => registerSaleMutation.mutate(parseInt(saleQuantity))}
-                disabled={!saleQuantity || parseInt(saleQuantity) <= 0 || parseInt(saleQuantity) > available || registerSaleMutation.isPending}
-              >
-                {registerSaleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Registrar
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaleDialog(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const qty = parseInt(saleQuantity)
+                if (qty > 0 && qty <= available) registerSaleMutation.mutate(qty)
+              }}
+              disabled={!saleQuantity || parseInt(saleQuantity) <= 0 || parseInt(saleQuantity) > available || registerSaleMutation.isPending}
+            >
+              {registerSaleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Registrar Venta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {showReturnDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg w-[360px] space-y-4">
-            <h2 className="text-xl font-bold">Registrar Devolución</h2>
-            <p className="text-sm text-muted-foreground">Disponible: {available}</p>
+      {/* Return Dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Devolución</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Disponible para devolver: <span className="font-medium text-orange-600">{available} uds</span>
+            </div>
             <div className="space-y-2">
               <Label>Cantidad</Label>
               <Input
@@ -291,19 +477,63 @@ export function ConsignmentDetailPage() {
                 placeholder="0"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancelar</Button>
-              <Button
-                onClick={() => registerReturnMutation.mutate(parseInt(returnQuantity))}
-                disabled={!returnQuantity || parseInt(returnQuantity) <= 0 || parseInt(returnQuantity) > available || registerReturnMutation.isPending}
-              >
-                {registerReturnMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Registrar
-              </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReturnDialog(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const qty = parseInt(returnQuantity)
+                if (qty > 0 && qty <= available) registerReturnMutation.mutate(qty)
+              }}
+              disabled={!returnQuantity || parseInt(returnQuantity) <= 0 || parseInt(returnQuantity) > available || registerReturnMutation.isPending}
+            >
+              {registerReturnMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Registrar Devolución
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Liquidate Dialog */}
+      <Dialog open={showLiquidateDialog} onOpenChange={setShowLiquidateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Liquidar Consignación</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Esta acción liquidará la consignación y registrará un movimiento de liquidación.
+            </p>
+            <div className="rounded-lg border p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Total vendido:</span>
+                <span className="font-medium">{row.quantity_sold} uds</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Comisión:</span>
+                <span className="font-medium">{row.commission_rate}%</span>
+              </div>
+              {available > 0 && (
+                <div className="flex justify-between text-orange-600">
+                  <span>Pendiente de retorno:</span>
+                  <span className="font-medium">{available} uds (auto-retornados)</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLiquidateDialog(false)}>Cancelar</Button>
+            <Button
+              variant="secondary"
+              onClick={() => liquidateMutation.mutate()}
+              disabled={liquidateMutation.isPending}
+            >
+              {liquidateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar Liquidación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

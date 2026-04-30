@@ -20,6 +20,8 @@ import {
   Building2,
   Shield,
   ShoppingCart,
+  AlertTriangle,
+  ListTodo,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -55,6 +57,8 @@ const mainNavItems: NavItem[] = [
       { title: 'Productos', icon: Package, href: '/inventory/products' },
       { title: 'Categorías', icon: Tags, href: '/inventory/categories' },
       { title: 'Movimientos', icon: ArrowLeftRight, href: '/inventory/movements' },
+      { title: 'Transferencias', icon: ArrowLeftRight, href: '/inventory/transfers' },
+      { title: 'Alertas Stock', icon: AlertTriangle, href: '/inventory/low-stock' },
     ]
   },
   { 
@@ -77,7 +81,15 @@ const mainNavItems: NavItem[] = [
     ]
   },
   { title: 'Tiendas', icon: Store, href: '/stores' },
-  { title: 'Consignaciones', icon: ClipboardList, href: '/consignments/list' },
+  { 
+    title: 'Consignaciones', 
+    icon: ClipboardList, 
+    href: '/consignments/list',
+    submenu: [
+      { title: 'Listado', icon: ClipboardList, href: '/consignments/list' },
+      { title: 'Socios', icon: UsersRound, href: '/consignments/partners' },
+    ]
+  },
   { title: 'Caja', icon: Wallet, href: '/cash-register/sessions' },
   { 
     title: 'Equipos', 
@@ -86,6 +98,7 @@ const mainNavItems: NavItem[] = [
     submenu: [
       { title: 'Equipos', icon: UsersRound, href: '/teams' },
       { title: 'Horarios', icon: CalendarDays, href: '/teams/schedules' },
+      { title: 'Tareas', icon: ListTodo, href: '/teams/tasks' },
     ]
   },
   { 

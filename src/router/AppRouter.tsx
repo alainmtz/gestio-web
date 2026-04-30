@@ -6,6 +6,8 @@ import { ProductsPage } from '@/pages/inventory/ProductsPage'
 import { ProductDetailPage } from '@/pages/inventory/ProductDetailPage'
 import { CategoriesPage } from '@/pages/inventory/CategoriesPage'
 import { MovementsPage } from '@/pages/inventory/MovementsPage'
+import { TransfersPage } from '@/pages/inventory/TransfersPage'
+import { LowStockPage } from '@/pages/inventory/LowStockPage'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage'
 import { SuppliersPage } from '@/pages/suppliers/SuppliersPage'
@@ -20,11 +22,13 @@ import { StoresPage } from '@/pages/stores/StoresPage'
 import { StoreDetailPage } from '@/pages/stores/StoreDetailPage'
 import { ConsignmentsPage } from '@/pages/consignments/ConsignmentsPage'
 import { ConsignmentDetailPage } from '@/pages/consignments/ConsignmentDetailPage'
+import { ConsignmentPartnersPage } from '@/pages/consignments/ConsignmentPartnersPage'
 import { SessionsPage } from '@/pages/cash-register/SessionsPage'
 import { SessionDetailPage } from '@/pages/cash-register/SessionDetailPage'
 import { TeamsPage } from '@/pages/teams/TeamsPage'
 import { TeamDetailPage } from '@/pages/teams/TeamDetailPage'
 import { SchedulesPage } from '@/pages/teams/SchedulesPage'
+import { TeamsTasksPage } from '@/pages/teams/TeamsTasksPage'
 import { ReportsDashboardPage } from '@/pages/reports/ReportsDashboardPage'
 import { SalesReportPage } from '@/pages/reports/SalesReportPage'
 import { InventoryReportPage } from '@/pages/reports/InventoryReportPage'
@@ -58,6 +62,8 @@ export function AppRouter() {
           <Route path="products/:id" element={<ProductDetailPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="movements" element={<MovementsPage />} />
+          <Route path="transfers" element={<TransfersPage />} />
+          <Route path="low-stock" element={<LowStockPage />} />
         </Route>
 
         <Route path="/customers" element={<PermissionRoute permission={PERMISSIONS.CUSTOMER_VIEW}><Outlet /></PermissionRoute>}>
@@ -94,6 +100,7 @@ export function AppRouter() {
         <Route path="/consignments" element={<PermissionRoute permission={PERMISSIONS.CONSIGNMENT_VIEW}><Outlet /></PermissionRoute>}>
           <Route index element={<Navigate to="/consignments/list" replace />} />
           <Route path="list" element={<ConsignmentsPage />} />
+          <Route path="partners" element={<ConsignmentPartnersPage />} />
           <Route path=":id" element={<ConsignmentDetailPage />} />
         </Route>
 
@@ -109,6 +116,7 @@ export function AppRouter() {
           <Route path="new" element={<TeamDetailPage />} />
           <Route path=":id" element={<TeamDetailPage />} />
           <Route path="schedules" element={<SchedulesPage />} />
+          <Route path="tasks" element={<TeamsTasksPage />} />
         </Route>
 
         <Route path="/reports" element={<PermissionRoute permission={PERMISSIONS.REPORT_VIEW}><Outlet /></PermissionRoute>}>

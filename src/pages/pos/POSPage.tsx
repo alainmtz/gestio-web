@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Package, ShoppingCart, CreditCard, User, Plus, Minus, Trash2, Search, Loader2, DollarSign, ShieldX } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Package, ShoppingCart, CreditCard, User, Plus, Minus, Trash2, Search, Loader2, DollarSign, ShieldX, Pause, Clock, Receipt } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
@@ -31,6 +32,30 @@ interface CashSession {
   id: string
   store_id: string
   status: string
+}
+
+interface HeldOrder {
+  id: string
+  cart: CartItem[]
+  customerName?: string
+  customerId?: string
+  total: number
+  createdAt: string
+}
+
+const HELD_ORDERS_KEY = 'pos-held-orders'
+
+function getHeldOrders(): HeldOrder[] {
+  try {
+    const stored = localStorage.getItem(HELD_ORDERS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+function saveHeldOrders(orders: HeldOrder[]) {
+  localStorage.setItem(HELD_ORDERS_KEY, JSON.stringify(orders))
 }
 
 export function POSPage() {
@@ -59,6 +84,8 @@ export function POSPage() {
   const [cashReceived, setCashReceived] = useState('')
   const [customerSearch, setCustomerSearch] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [showHeldOrders, setShowHeldOrders] = useState(false)
+  const [heldOrders, setHeldOrders] = useState<HeldOrder[]>(getHeldOrders)
 
   const { data: activeCurrency } = useQuery({
     queryKey: ['defaultCurrency'],
@@ -268,6 +295,43 @@ export function POSPage() {
     setCart(prev => prev.filter(item => item.product.id !== productId))
   }
 
+  const holdOrder = () => {
+    if (cart.length === 0) return
+    const order: HeldOrder = {
+      id: `order-${Date.now()}`,
+      cart: [...cart],
+      customerName: customerSearch || undefined,
+      customerId: selectedCustomerId || undefined,
+      total: cartTotal,
+      createdAt: new Date().toISOString(),
+    }
+    const updated = [...heldOrders, order]
+    setHeldOrders(updated)
+    saveHeldOrders(updated)
+    setCart([])
+    setCustomerSearch('')
+    setSelectedCustomerId('')
+    toast({ title: 'Pedido retenido', description: `Orden ${order.id.slice(-6)} guardada` })
+  }
+
+  const recallOrder = (order: HeldOrder) => {
+    setCart(order.cart)
+    if (order.customerId) setSelectedCustomerId(order.customerId)
+    if (order.customerName) setCustomerSearch(order.customerName)
+    const updated = heldOrders.filter(o => o.id !== order.id)
+    setHeldOrders(updated)
+    saveHeldOrders(updated)
+    setShowHeldOrders(false)
+    toast({ title: 'Pedido recuperado', description: `Orden ${order.id.slice(-6)} cargada` })
+  }
+
+  const deleteHeldOrder = (orderId: string) => {
+    const updated = heldOrders.filter(o => o.id !== orderId)
+    setHeldOrders(updated)
+    saveHeldOrders(updated)
+    toast({ title: 'Pedido eliminado', variant: 'destructive' })
+  }
+
   const cartTotal = useMemo(() => 
     cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   , [cart])
@@ -377,22 +441,40 @@ export function POSPage() {
           )}
         </div>
 
-        <div className="border-t pt-4 mt-4">
+        <div className="border-t pt-4 mt-4 space-y-2">
           <div className="flex justify-between text-lg font-bold">
             <span>Total</span>
             <span>${cartTotal.toFixed(2)}</span>
           </div>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              size="lg"
+              disabled={cart.length === 0}
+              onClick={() => setShowCheckout(true)}
+            >
+              <CreditCard className="mr-2 h-5 w-5" />
+              Cobrar
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              disabled={cart.length === 0}
+              onClick={holdOrder}
+              title="Retener pedido"
+            >
+              <Pause className="h-5 w-5" />
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => setShowHeldOrders(true)}
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Pedidos retenidos ({heldOrders.length})
+          </Button>
         </div>
-
-        <Button
-          className="mt-4 w-full"
-          size="lg"
-          disabled={cart.length === 0}
-          onClick={() => setShowCheckout(true)}
-        >
-          <CreditCard className="mr-2 h-5 w-5" />
-          Cobrar
-        </Button>
       </div>
 
       {/* Checkout Dialog */}
@@ -474,6 +556,49 @@ export function POSPage() {
               Completar Venta
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Held Orders Dialog */}
+      <Dialog open={showHeldOrders} onOpenChange={setShowHeldOrders}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pause className="h-5 w-5" />
+              Pedidos Retenidos
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {heldOrders.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">No hay pedidos retenidos</p>
+            ) : (
+              heldOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm font-mono">#{order.id.slice(-6)}</span>
+                      {order.customerName && (
+                        <Badge variant="outline" className="text-xs">{order.customerName}</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {order.cart.length} productos · {new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm">${order.total.toFixed(2)}</span>
+                    <Button variant="outline" size="sm" onClick={() => recallOrder(order)}>
+                      Cargar
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteHeldOrder(order.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
