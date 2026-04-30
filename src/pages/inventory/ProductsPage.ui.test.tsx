@@ -92,9 +92,10 @@ describe('ProductsPage con React Query', () => {
     expect(screen.getByRole('button', { name: /nuevo producto/i })).toBeInTheDocument()
   })
 
-  it('renderiza tabla', () => {
+  it('renderiza lista de productos', () => {
     renderWithProviders(<ProductsPage />)
-    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: /productos/i })).toBeInTheDocument()
+    expect(screen.getByText(/gestiona tu inventario/i)).toBeInTheDocument()
   })
 
   it('puede escribir en búsqueda', async () => {
