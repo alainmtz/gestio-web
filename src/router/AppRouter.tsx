@@ -41,11 +41,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { SettingsLayout } from '@/components/layout/SettingsLayout'
 
 function AppLayout() {
-  return (
-    <DashboardLayout>
-      <Outlet />
-    </DashboardLayout>
-  )
+  return <DashboardLayout />
 }
 
 export function AppRouter() {

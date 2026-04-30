@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useProducts, useDeleteProduct, useCreateProduct, useUpdateProduct, useCategories } from '@/hooks/useProducts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,11 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProductCard } from '@/components/products/ProductCard'
+import type { Product } from '@/api/products'
 import { showErrorToast } from '@/lib/errorToast'
-import { Plus, Search, Package, Edit, Trash2, Upload } from 'lucide-react'
+import { Plus, Search, Upload, Package } from 'lucide-react'
 import { ProductForm } from '@/components/products/ProductForm'
 import { ProductCsvImport } from '@/components/products/ProductCsvImport'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,7 @@ export function ProductsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [csvOpen, setCsvOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const { data, isLoading } = useProducts({ search: search || undefined, categoryId, page, pageSize: 20 })
   const { data: categories } = useCategories()
@@ -62,6 +63,7 @@ export function ProductsPage() {
   }
 
   const handleUpdate = async (input: CreateProductInput) => {
+    if (!editingProduct) return
     try {
       await updateProduct.mutateAsync({ id: editingProduct.id, input })
       setFormOpen(false)
@@ -83,7 +85,7 @@ export function ProductsPage() {
     }
   }
 
-  const handleOpenForm = (product?: any) => {
+  const handleOpenForm = (product: Product | null) => {
     setEditingProduct(product || null)
     setFormOpen(true)
   }
@@ -101,7 +103,7 @@ export function ProductsPage() {
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV
             </Button>
-            <Button onClick={() => handleOpenForm()}>
+            <Button onClick={() => handleOpenForm(null)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Producto
             </Button>
@@ -146,64 +148,20 @@ export function ProductsPage() {
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-28 w-full" />
               ))}
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Producto</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">SKU</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Stock</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Precio</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Costo</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Categoría</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3">
-                          <Link to={`/inventory/products/${product.id}`} className="font-medium hover:underline">
-                            {product.name}
-                          </Link>
-                          {product.barcode && (
-                            <p className="text-xs text-muted-foreground">{product.barcode}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{product.sku}</td>
-                        <td className="px-4 py-3">
-                          <span className={(product.totalStock ?? 0) > 0 ? 'text-green-600 font-medium' : 'text-destructive'}>
-                            {product.totalStock ?? 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">${product.price.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm">${product.cost.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {product.category?.name || <span className="text-muted-foreground">Sin categoría</span>}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            {hasPermission(PERMISSIONS.PRODUCT_EDIT) && (
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenForm(product)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {hasPermission(PERMISSIONS.PRODUCT_DELETE) && (
-                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(product.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onEdit={(p) => handleOpenForm(p)}
+                    onDelete={(id) => setDeleteId(id)}
+                  />
+                ))}
               </div>
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
@@ -228,7 +186,7 @@ export function ProductsPage() {
       <ProductForm
         open={formOpen}
         onOpenChange={setFormOpen}
-        product={editingProduct}
+        product={editingProduct ?? undefined}
         onSubmit={editingProduct ? handleUpdate : handleCreate}
         isLoading={false}
       />

@@ -22,19 +22,30 @@ import {
   CreditCard,
   CalendarDays,
   Building2,
-  UserCog,
   Shield,
-  RefreshCw,
   ShoppingCart,
   X,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useRef, useCallback, useEffect, useState } from 'react'
 
 interface SidebarProps {
   collapsed: boolean
   onCollapsedChange: (collapsed: boolean) => void
   mobileOpen?: boolean
   onMobileClose?: () => void
+}
+
+interface NavSubmenu {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  href: string
+}
+
+export interface FlyoutMenu {
+  item: NavItem
+  subItems: NavSubmenu[]
+  rect: DOMRect
 }
 
 const mainNavItems = [
@@ -92,23 +103,116 @@ const mainNavItems = [
       { title: 'Auditoría', icon: Shield, href: '/reports/audit' },
     ]
   },
-]
+] as NavItem[]
+
+interface NavItem {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  href: string
+  submenu?: NavSubmenu[]
+}
+
+let flyoutListeners: ((menu: FlyoutMenu | null) => void)[] = []
+let closeTimeout: ReturnType<typeof setTimeout> | null = null
+
+export function setFlyoutMenu(menu: FlyoutMenu | null) {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
+  }
+  for (const listener of flyoutListeners) {
+    listener(menu)
+  }
+}
+
+export function scheduleFlyoutClose() {
+  closeTimeout = setTimeout(() => {
+    for (const listener of flyoutListeners) {
+      listener(null)
+    }
+  }, 100)
+}
+
+export function cancelFlyoutClose() {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
+  }
+}
+
+export function useFlyoutMenu() {
+  const [menu, setMenu] = useState<FlyoutMenu | null>(null)
+  useEffect(() => {
+    flyoutListeners.push(setMenu)
+    return () => {
+      flyoutListeners = flyoutListeners.filter(l => l !== setMenu)
+    }
+  }, [])
+  return menu
+}
+
+export function SidebarFlyout({ location }: { location: ReturnType<typeof useLocation> }) {
+  const menu = useFlyoutMenu()
+
+  if (!menu) return null
+
+  return (
+    <div
+      className="fixed z-[60] w-52 rounded-xl border bg-card p-2 shadow-lg"
+      style={{ left: menu.rect.right + 8, top: menu.rect.top }}
+      onMouseEnter={cancelFlyoutClose}
+      onMouseLeave={() => setFlyoutMenu(null)}
+    >
+      <p className="px-2 py-1.5 text-sm font-semibold">{menu.item.title}</p>
+      <div className="space-y-0.5">
+        {menu.subItems.map((subItem) => (
+          <Link key={subItem.href} to={subItem.href}>
+            <Button
+              variant={location.pathname === subItem.href ? 'secondary' : 'ghost'}
+              size="sm"
+              className="w-full justify-start gap-2 text-sm"
+            >
+              <subItem.icon className="h-4 w-4" />
+              {subItem.title}
+            </Button>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function Sidebar({ collapsed, onCollapsedChange, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation()
   const { permissions } = useAuthStore()
   const isAdmin = permissions.includes('SETTINGS_ORG')
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   const isActive = (href: string, submenu?: { href: string }[]) => {
     if (href === '/dashboard') return location.pathname === '/dashboard'
     
-    // Check if any submenu item matches current path
     if (submenu) {
       return submenu.some(sub => location.pathname.startsWith(sub.href))
     }
     
     return location.pathname.startsWith(href)
   }
+
+  const handleItemEnter = useCallback((item: NavItem) => {
+    if (!collapsed) return
+    const btn = buttonRefs.current.get(item.href)
+    if (btn) {
+      setFlyoutMenu({
+        item,
+        subItems: item.submenu!,
+        rect: btn.getBoundingClientRect(),
+      })
+    }
+  }, [collapsed])
+
+  const handleItemLeave = useCallback(() => {
+    scheduleFlyoutClose()
+  }, [])
 
   return (
     <aside
@@ -142,39 +246,55 @@ export function Sidebar({ collapsed, onCollapsedChange, mobileOpen, onMobileClos
       </div>
 
       <ScrollArea className="flex-1 py-4">
-        <nav className="space-y-1 px-2">
-          {mainNavItems.map((item) => (
-            <div key={item.href}>
-              <Link to={item.href}>
-                <Button
-                  variant={isActive(item.href, item.submenu) ? 'secondary' : 'ghost'}
-                  className={cn(
-                    'w-full justify-start gap-3',
-                    collapsed && 'justify-center px-2'
-                  )}
+        <nav className="space-y-1">
+          {mainNavItems.map((item) => {
+            const active = isActive(item.href, item.submenu)
+            const hasSubmenu = item.submenu && item.submenu.length > 0
+
+            return (
+              <div key={item.href}>
+                <div
+                  className="relative"
+                  onMouseEnter={() => collapsed && hasSubmenu && handleItemEnter(item)}
+                  onMouseLeave={() => collapsed && hasSubmenu && handleItemLeave()}
                 >
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && <span>{item.title}</span>}
-                </Button>
-              </Link>
-              {!collapsed && item.submenu && isActive(item.href, item.submenu) && (
-                <div className="ml-6 mt-1 space-y-1 border-l-2 border-muted pl-2">
-                  {item.submenu.map((subItem) => (
-                    <Link key={subItem.href} to={subItem.href}>
-                      <Button
-                        variant={location.pathname === subItem.href ? 'secondary' : 'ghost'}
-                        size="sm"
-                        className="w-full justify-start gap-2 text-sm"
-                      >
-                        <subItem.icon className="h-4 w-4" />
-                        {subItem.title}
-                      </Button>
-                    </Link>
-                  ))}
+                  <Link to={item.href}>
+                    <Button
+                      ref={(el) => {
+                        if (el) buttonRefs.current.set(item.href, el)
+                        else buttonRefs.current.delete(item.href)
+                      }}
+                      variant={active ? 'secondary' : 'ghost'}
+                      className={cn(
+                        'w-full justify-start gap-3',
+                        collapsed && 'justify-center px-0 w-[70px]'
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Button>
+                  </Link>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {!collapsed && hasSubmenu && active && (
+                  <div className="ml-6 mt-1 space-y-1 border-l-2 border-muted pl-2">
+                    {item.submenu!.map((subItem) => (
+                      <Link key={subItem.href} to={subItem.href}>
+                        <Button
+                          variant={location.pathname === subItem.href ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="w-full justify-start gap-2 text-sm"
+                        >
+                          <subItem.icon className="h-4 w-4" />
+                          {subItem.title}
+                        </Button>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
       </ScrollArea>
 

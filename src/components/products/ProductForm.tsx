@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +29,7 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
       tax_rate: 0,
       description: '',
       barcode: '',
+      category_id: undefined,
       has_variants: false,
     },
   })
@@ -69,6 +70,9 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Producto' : 'Nuevo Producto'}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? 'Modifica los campos del producto' : 'Completa los datos del nuevo producto'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -137,6 +141,24 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
             <div className="col-span-2">
               <Label htmlFor="description">Descripción</Label>
               <Input id="description" {...register('description')} placeholder="Descripción del producto" />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="category_id">Categoría</Label>
+              <Select
+                value={watch('category_id') || 'none'}
+                onValueChange={(value) => setValue('category_id', value === 'none' ? undefined : value)}
+              >
+                <SelectTrigger id="category_id">
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin categoría</SelectItem>
+                  {(categories ?? []).map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
