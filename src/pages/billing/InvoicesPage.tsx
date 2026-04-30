@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, FileText, Eye, Download } from 'lucide-react'
+import { Plus, Search, FileText, Eye, Download, Calendar, DollarSign } from 'lucide-react'
 import { useStores } from '@/hooks/useStores'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -118,60 +118,42 @@ export function InvoicesPage() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Número</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Cliente</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Total</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Pago</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {invoices.map((invoice) => {
-                      const status = statusLabels[invoice.status] || { label: invoice.status, variant: 'secondary' as const }
-                      const payment = paymentLabels[invoice.payment_status] || { label: invoice.payment_status, variant: 'secondary' as const }
-                      return (
-                        <tr key={invoice.id} className="hover:bg-muted/50">
-                          <td className="px-4 py-3 font-medium">
-                            <Link to={`/billing/invoices/${invoice.id}`} className="hover:underline">
-                              {invoice.number}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">{invoice.customer?.name || '-'}</td>
-                          <td className="px-4 py-3">${invoice.total.toFixed(2)}</td>
-                          <td className="px-4 py-3">
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant={payment.variant}>{payment.label}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('es-ES') : '-'}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Link to={`/billing/invoices/${invoice.id}`}>
-                                <Button variant="ghost" size="icon">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                              <Link to={`/billing/invoices/${invoice.id}`}>
-                                <Button variant="ghost" size="icon" title="Ver detalle">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {invoices.map((invoice) => {
+                  const status = statusLabels[invoice.status] || { label: invoice.status, variant: 'secondary' as const }
+                  const payment = paymentLabels[invoice.payment_status] || { label: invoice.payment_status, variant: 'secondary' as const }
+                  return (
+                    <div key={invoice.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <Link to={`/billing/invoices/${invoice.id}`} className="font-medium hover:underline">{invoice.number}</Link>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                            <span>{invoice.customer?.name || '-'}</span>
+                            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${invoice.total.toFixed(2)}</span>
+                            {invoice.created_at && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(invoice.created_at).toLocaleDateString('es-ES')}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <Badge variant={payment.variant}>{payment.label}</Badge>
+                        <Link to={`/billing/invoices/${invoice.id}`}>
+                          <Button variant="ghost" size="icon" title="Ver detalle">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link to={`/billing/invoices/${invoice.id}`}>
+                          <Button variant="ghost" size="icon" title="Descargar">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">

@@ -25,7 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { ArrowLeftRight, Search, Plus, Package, ChevronLeft, ChevronRight, Edit } from 'lucide-react'
+import { ArrowLeftRight, Search, Plus, Package, ChevronLeft, ChevronRight, Edit, Store, Calendar } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { showErrorToast } from '@/lib/errorToast'
 import type { MovementType, CreateMovementInput, InventoryMovement } from '@/api/products'
@@ -456,79 +456,47 @@ export function MovementsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Tipo</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Producto</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Tienda</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Cantidad</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Costo</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Notas</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Usuario</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filteredMovements.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                      No hay movimientos registrados
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMovements.map((movement) => (
-                    <tr key={movement.id} className="hover:bg-muted/50">
-                      <td className="px-4 py-3 text-sm">
-                        {new Date(movement.created_at).toLocaleString('es-ES')}
-                      </td>
-                      <td className="px-4 py-3">
+          <div className="space-y-3">
+            {filteredMovements.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No hay movimientos registrados
+              </div>
+            ) : (
+              filteredMovements.map((movement) => (
+                <div key={movement.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`rounded-full p-2 ${movement.quantity > 0 ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
+                      <ArrowLeftRight className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
                         <Badge variant={typeColors[movement.movement_type] || 'outline'}>
-                          {MOVEMENT_TYPES.find((t) => t.value === movement.movement_type)?.label ||
-                            movement.movement_type}
+                          {MOVEMENT_TYPES.find((t) => t.value === movement.movement_type)?.label || movement.movement_type}
                         </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          {movement.product?.name || 'Producto'}
-                        </div>
-                        {movement.product?.sku && (
-                          <p className="text-xs text-muted-foreground">{movement.product.sku}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm">{movement.store?.name || '-'}</td>
-                      <td
-                        className={`px-4 py-3 font-medium ${
-                          movement.quantity > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {movement.quantity > 0 ? '+' : ''}
-                        {movement.quantity}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {movement.cost != null ? `$${movement.cost.toFixed(2)}` : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground max-w-[160px] truncate">
-                        {movement.notes || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {movement.user?.full_name || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {hasPermission(PERMISSIONS.INVENTORY_ADJUST) && (
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(movement)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        <span className={`font-medium ${movement.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {movement.quantity > 0 ? '+' : ''}{movement.quantity}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span className="flex items-center gap-1"><Package className="h-3 w-3" />{movement.product?.name || 'Producto'}</span>
+                        <span className="flex items-center gap-1"><Store className="h-3 w-3" />{movement.store?.name || '-'}</span>
+                        {movement.cost != null && <span>${movement.cost.toFixed(2)}</span>}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(movement.created_at).toLocaleString('es-ES')}</span>
+                        {movement.user?.full_name && <span>{movement.user.full_name}</span>}
+                        {movement.notes && <span className="truncate max-w-[200px]">{movement.notes}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  {hasPermission(PERMISSIONS.INVENTORY_ADJUST) && (
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => openEditDialog(movement)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
           {data && data.total > PAGE_SIZE && (
             <div className="flex items-center justify-between mt-4">

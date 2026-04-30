@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react'
+import { Users, Plus, Search, Edit, Trash2, Mail, Phone, Hash } from 'lucide-react'
 import { CustomerForm } from '@/components/customers/CustomerForm'
 import {
   AlertDialog,
@@ -121,52 +121,39 @@ export function CustomersPage() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Código</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Nombre</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Tipo</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Teléfono</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{customer.code}</td>
-                        <td className="px-4 py-3 font-medium">
-                          <Link to={`/customers/${customer.id}`} className="hover:underline">
-                            {customer.name}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={customer.customer_type === 'business' ? 'default' : 'secondary'}>
+              <div className="space-y-3">
+                {customers.map((customer) => (
+                  <div key={customer.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="rounded-full bg-primary/10 p-2">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <Link to={`/customers/${customer.id}`} className="font-medium hover:underline">{customer.name}</Link>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1"><Hash className="h-3 w-3" />{customer.code}</span>
+                          <Badge variant={customer.customer_type === 'business' ? 'default' : 'secondary'} className="text-xs">
                             {customer.customer_type === 'business' ? 'Empresa' : 'Individual'}
                           </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm">{customer.email || '-'}</td>
-                        <td className="px-4 py-3 text-sm">{customer.phone || '-'}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            {hasPermission(PERMISSIONS.CUSTOMER_EDIT) && (
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenForm(customer)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {hasPermission(PERMISSIONS.CUSTOMER_DELETE) && (
-                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(customer.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          {customer.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{customer.email}</span>}
+                          {customer.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{customer.phone}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {hasPermission(PERMISSIONS.CUSTOMER_EDIT) && (
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenForm(customer)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {hasPermission(PERMISSIONS.CUSTOMER_DELETE) && (
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(customer.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">

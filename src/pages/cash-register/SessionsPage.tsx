@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Eye, Loader2, ArrowRight, PauseCircle, PlayCircle } from 'lucide-react'
+import { Plus, Eye, Loader2, ArrowRight, PauseCircle, PlayCircle, Wallet, Store, Calendar } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { useStores } from '@/hooks/useStores'
 import {
@@ -143,44 +143,35 @@ export function SessionsPage() {
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : sessions && sessions.length > 0 ? (
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Cajero</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Tienda</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Apertura</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {sessions.map((s) => {
-                    const cfg = statusConfig[s.status] ?? { label: s.status, variant: 'secondary' as const }
-                    return (
-                      <tr key={s.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 font-medium">{s.user?.full_name ?? s.user_id}</td>
-                        <td className="px-4 py-3">{s.store?.name ?? s.store_id}</td>
-                        <td className="px-4 py-3 text-sm">{formatCurrencyAmounts(s.opening_amounts)}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {new Date(s.opened_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Link to={`/cash-register/sessions/${s.id}`}>
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              {sessions.map((s) => {
+                const cfg = statusConfig[s.status] ?? { label: s.status, variant: 'secondary' as const }
+                return (
+                  <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`rounded-full p-2 ${s.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900' : cfg.variant === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-muted'}`}>
+                        <Wallet className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium">{s.user?.full_name ?? s.user_id}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1"><Store className="h-3 w-3" />{s.store?.name ?? s.store_id}</span>
+                          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(s.opened_at).toLocaleDateString()}</span>
+                          <span>{formatCurrencyAmounts(s.opening_amounts)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                      <Link to={`/cash-register/sessions/${s.id}`}>
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">

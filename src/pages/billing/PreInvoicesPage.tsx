@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, FileText, Eye } from 'lucide-react'
+import { Plus, Search, FileText, Eye, Calendar, DollarSign } from 'lucide-react'
 import { useStores } from '@/hooks/useStores'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -116,50 +116,35 @@ export function PreInvoicesPage() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Número</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Cliente</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Total</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {preInvoices.map((preInvoice) => {
-                      const status = statusLabels[preInvoice.status] || { label: preInvoice.status, variant: 'secondary' as const }
-                      return (
-                        <tr key={preInvoice.id} className="hover:bg-muted/50">
-                          <td className="px-4 py-3 font-medium">
-                            <Link to={`/billing/preinvoices/${preInvoice.id}`} className="hover:underline">
-                              {preInvoice.number}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">{preInvoice.customer?.name || '-'}</td>
-                          <td className="px-4 py-3">${preInvoice.total.toFixed(2)}</td>
-                          <td className="px-4 py-3">
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {new Date(preInvoice.created_at).toLocaleDateString('es-ES')}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Link to={`/billing/preinvoices/${preInvoice.id}`}>
-                                <Button variant="ghost" size="icon">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {preInvoices.map((preInvoice) => {
+                  const status = statusLabels[preInvoice.status] || { label: preInvoice.status, variant: 'secondary' as const }
+                  return (
+                    <div key={preInvoice.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <Link to={`/billing/preinvoices/${preInvoice.id}`} className="font-medium hover:underline">{preInvoice.number}</Link>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                            <span>{preInvoice.customer?.name || '-'}</span>
+                            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${preInvoice.total.toFixed(2)}</span>
+                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(preInvoice.created_at).toLocaleDateString('es-ES')}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <Link to={`/billing/preinvoices/${preInvoice.id}`}>
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">

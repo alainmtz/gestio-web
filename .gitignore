@@ -26,3 +26,16 @@ npm-debug.log*
 
 # Cache
 .cache/
+
+# Coverage
+coverage/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Supabase temp
+supabase/.temp/
+supabase/.branches/
+
+# AI assistant config
+.claude/

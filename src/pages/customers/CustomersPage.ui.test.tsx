@@ -11,8 +11,8 @@ const mockUpdateCustomer = vi.fn().mockResolvedValue({ id: 'updated-id' })
 
 const mockCustomersData = {
   customers: [
-    { id: 'cust-1', name: 'Empresa A', code: 'C001', email: 'test@test.com', city: 'La Habana', status: 'active', created_at: '2024-01-01' },
-    { id: 'cust-2', name: 'Empresa B', code: 'C002', email: 'test2@test.com', city: 'Santiago', status: 'active', created_at: '2024-01-02' },
+    { id: 'cust-1', name: 'Empresa A', code: 'C001', email: 'test@test.com', phone: '+53 5555', customer_type: 'business', status: 'active', created_at: '2024-01-01' },
+    { id: 'cust-2', name: 'Empresa B', code: 'C002', email: 'test2@test.com', phone: '+53 6666', customer_type: 'individual', status: 'active', created_at: '2024-01-02' },
   ],
   total: 2,
 }
@@ -93,10 +93,10 @@ describe('CustomersPage UI', () => {
 
   it('renderiza la estructura principal de clientes', () => {
     renderWithProviders(<CustomersPage />)
-    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByText(/lista de clientes/i)).toBeInTheDocument()
   })
 
-  it('renderiza tabla con clientes', () => {
+  it('renderiza lista con clientes', () => {
     renderWithProviders(<CustomersPage />)
     expect(screen.getByText('Empresa A')).toBeInTheDocument()
     expect(screen.getByText('Empresa B')).toBeInTheDocument()
@@ -122,13 +122,13 @@ describe('CustomersPage UI', () => {
     expect(screen.getByTestId('customer-form')).toHaveTextContent('create-mode')
   })
 
-  it('abre formulario en modo editar al pulsar accion de fila', async () => {
+  it('abre formulario en modo editar al pulsar accion de tarjeta', async () => {
     const user = userEvent.setup()
     renderWithProviders(<CustomersPage />)
 
-    const customerRow = screen.getByText('Empresa A').closest('tr')
-    expect(customerRow).not.toBeNull()
-    const actionButtons = within(customerRow as HTMLElement).getAllByRole('button')
+    const customerCard = screen.getByText('Empresa A').closest('[class*="rounded-lg"]')
+    expect(customerCard).not.toBeNull()
+    const actionButtons = within(customerCard as HTMLElement).getAllByRole('button')
 
     await user.click(actionButtons[0])
     expect(screen.getByTestId('customer-form')).toHaveTextContent('edit-mode')
@@ -138,9 +138,9 @@ describe('CustomersPage UI', () => {
     const user = userEvent.setup()
     renderWithProviders(<CustomersPage />)
 
-    const customerRow = screen.getByText('Empresa A').closest('tr')
-    expect(customerRow).not.toBeNull()
-    const actionButtons = within(customerRow as HTMLElement).getAllByRole('button')
+    const customerCard = screen.getByText('Empresa A').closest('[class*="rounded-lg"]')
+    expect(customerCard).not.toBeNull()
+    const actionButtons = within(customerCard as HTMLElement).getAllByRole('button')
 
     await user.click(actionButtons[1])
     await user.click(screen.getByRole('button', { name: /eliminar/i }))

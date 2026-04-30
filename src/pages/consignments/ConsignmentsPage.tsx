@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, ClipboardList, ArrowUpRight, ArrowDownLeft, Eye, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, ClipboardList, ArrowUpRight, ArrowDownLeft, Eye, Loader2, AlertTriangle, Store, Package } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
@@ -264,44 +264,70 @@ export function ConsignmentsPage() {
     }
   }
 
-  const renderOutboundRow = (c: Consignment) => {
-    const status = statusLabels[c.status] || { label: c.status, variant: 'secondary' }
-    return (
-      <tr key={c.id} className="hover:bg-muted/50">
-        <td className="px-4 py-3 font-medium">{c.customer?.name || c.partner_id}</td>
-        <td className="px-4 py-3">{c.store?.name || '-'}</td>
-        <td className="px-4 py-3">{c.product?.name || '-'}</td>
-        <td className="px-4 py-3">{c.quantity_sent}</td>
-        <td className="px-4 py-3">{c.quantity_sold}</td>
-        <td className="px-4 py-3">{c.quantity_returned}</td>
-        <td className="px-4 py-3">{c.commission_rate}%</td>
-        <td className="px-4 py-3"><Badge variant={status.variant}>{status.label}</Badge></td>
-        <td className="px-4 py-3 text-right">
-          <Link to={`/consignments/${c.id}`}>
-            <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-          </Link>
-        </td>
-      </tr>
-    )
+  const renderOutboundCards = () => {
+    return outboundConsignments.map(c => {
+      const status = statusLabels[c.status] || { label: c.status, variant: 'secondary' }
+      return (
+        <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="rounded-full bg-primary/10 p-2">
+              <ArrowUpRight className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium">{c.customer?.name || c.partner_id}</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <span className="flex items-center gap-1"><Store className="h-3 w-3" />{c.store?.name || '-'}</span>
+                <span className="flex items-center gap-1"><Package className="h-3 w-3" />{c.product?.name || '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <span>Enviado: {c.quantity_sent}</span>
+                <span>Vendido: {c.quantity_sold}</span>
+                <span>Devuelto: {c.quantity_returned}</span>
+                <span>Comisión: {c.commission_rate}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant={status.variant}>{status.label}</Badge>
+            <Link to={`/consignments/${c.id}`}>
+              <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </div>
+      )
+    })
   }
 
-  const renderInboundRow = (c: Consignment) => {
-    const status = statusLabels[c.status] || { label: c.status, variant: 'secondary' }
-    return (
-      <tr key={c.id} className="hover:bg-muted/50">
-        <td className="px-4 py-3 font-medium">{c.supplier?.name || c.partner_id}</td>
-        <td className="px-4 py-3">{c.store?.name || '-'}</td>
-        <td className="px-4 py-3">{c.product?.name || '-'}</td>
-        <td className="px-4 py-3">{c.quantity_sent}</td>
-        <td className="px-4 py-3">{c.commission_rate}%</td>
-        <td className="px-4 py-3"><Badge variant={status.variant}>{status.label}</Badge></td>
-        <td className="px-4 py-3 text-right">
-          <Link to={`/consignments/${c.id}`}>
-            <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-          </Link>
-        </td>
-      </tr>
-    )
+  const renderInboundCards = () => {
+    return inboundConsignments.map(c => {
+      const status = statusLabels[c.status] || { label: c.status, variant: 'secondary' }
+      return (
+        <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="rounded-full bg-primary/10 p-2">
+              <ArrowDownLeft className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium">{c.supplier?.name || c.partner_id}</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <span className="flex items-center gap-1"><Store className="h-3 w-3" />{c.store?.name || '-'}</span>
+                <span className="flex items-center gap-1"><Package className="h-3 w-3" />{c.product?.name || '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <span>Recibido: {c.quantity_sent}</span>
+                <span>Comisión: {c.commission_rate}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant={status.variant}>{status.label}</Badge>
+            <Link to={`/consignments/${c.id}`}>
+              <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </div>
+      )
+    })
   }
 
   return (
@@ -347,25 +373,8 @@ export function ConsignmentsPage() {
               ) : outboundConsignments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No hay consignaciones de salida</div>
               ) : (
-                <div className="rounded-md border">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Cliente</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Tienda</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Producto</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Enviado</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Vendido</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Devuelto</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Comisión</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                        <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {outboundConsignments.map(renderOutboundRow)}
-                    </tbody>
-                  </table>
+                <div className="space-y-3">
+                  {renderOutboundCards()}
                 </div>
               )}
             </CardContent>
@@ -380,23 +389,8 @@ export function ConsignmentsPage() {
               ) : inboundConsignments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No hay consignaciones de entrada</div>
               ) : (
-                <div className="rounded-md border">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Proveedor</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Tienda</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Producto</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Recibido</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Comisión</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                        <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {inboundConsignments.map(renderInboundRow)}
-                    </tbody>
-                  </table>
+                <div className="space-y-3">
+                  {renderInboundCards()}
                 </div>
               )}
             </CardContent>

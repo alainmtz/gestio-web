@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { ArrowLeftRight, Plus, Eye, Loader2, Search } from 'lucide-react'
+import { ArrowLeftRight, Plus, Eye, Loader2, Search, Store, Package, Calendar } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
@@ -265,64 +265,38 @@ export function TransfersPage() {
               <p className="text-sm mt-1">Crea una transferencia entre tiendas</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Producto</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Origen</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Destino</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Cantidad</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredTransfers.map((t) => {
-                    const status = statusLabels[t.status] || { label: t.status, variant: 'secondary' as const }
-                    return (
-                      <tr key={t.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-sm">{t.product?.name}</p>
-                            <p className="text-xs text-muted-foreground">{t.product?.sku}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">{t.from_store?.name}</td>
-                        <td className="px-4 py-3 text-sm">{t.to_store?.name}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{t.quantity}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {new Date(t.created_at).toLocaleDateString('es-ES')}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {t.status === 'PENDING' && hasPermission(PERMISSIONS.MOVEMENT_CREATE) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateTransferStatusMutation.mutate({ id: t.id, status: 'IN_TRANSIT' })}
-                            >
-                              Enviar
-                            </Button>
-                          )}
-                          {t.status === 'IN_TRANSIT' && hasPermission(PERMISSIONS.MOVEMENT_CREATE) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateTransferStatusMutation.mutate({ id: t.id, status: 'COMPLETED' })}
-                            >
-                              Recibir
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              {filteredTransfers.map((t) => {
+                const status = statusLabels[t.status] || { label: t.status, variant: 'secondary' as const }
+                return (
+                  <div key={t.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="rounded-full bg-primary/10 p-2">
+                        <ArrowLeftRight className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 text-sm"><Package className="h-3 w-3" />{t.product?.name}</span>
+                          <span className="font-medium">{t.quantity}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1"><Store className="h-3 w-3" />{t.from_store?.name} → {t.to_store?.name}</span>
+                          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(t.created_at).toLocaleDateString('es-ES')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                      {t.status === 'PENDING' && hasPermission(PERMISSIONS.MOVEMENT_CREATE) && (
+                        <Button variant="ghost" size="sm" onClick={() => updateTransferStatusMutation.mutate({ id: t.id, status: 'IN_TRANSIT' })}>Enviar</Button>
+                      )}
+                      {t.status === 'IN_TRANSIT' && hasPermission(PERMISSIONS.MOVEMENT_CREATE) && (
+                        <Button variant="ghost" size="sm" onClick={() => updateTransferStatusMutation.mutate({ id: t.id, status: 'COMPLETED' })}>Recibir</Button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </CardContent>
