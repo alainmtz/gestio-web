@@ -80,7 +80,7 @@ export function TeamsTasksPage() {
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending')
   const [dueDate, setDueDate] = useState('')
-  const [assignedTo, setAssignedTo] = useState('')
+  const [assignedTo, setAssignedTo] = useState('none')
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['teamTasks', organizationId],
@@ -131,7 +131,7 @@ export function TeamsTasksPage() {
           priority,
           status,
           due_date: dueDate || null,
-          assigned_to: assignedTo || null,
+          assigned_to: assignedTo === 'none' ? null : assignedTo,
           created_by: userId,
         })
         .select()
@@ -152,7 +152,7 @@ export function TeamsTasksPage() {
       if (!editingTask) return
       const { data, error } = await supabase
         .from('team_tasks')
-        .update({ title, description: description || null, priority, status, due_date: dueDate || null, assigned_to: assignedTo || null })
+        .update({ title, description: description || null, priority, status, due_date: dueDate || null, assigned_to: assignedTo === 'none' ? null : assignedTo })
         .eq('id', editingTask.id)
         .select()
         .single()
@@ -210,7 +210,7 @@ export function TeamsTasksPage() {
 
   const filtered = (tasks || []).filter(task => {
     if (statusFilter !== 'all' && task.status !== statusFilter) return false
-    if (assigneeFilter && task.assigned_to !== assigneeFilter) return false
+    if (assigneeFilter && assigneeFilter !== 'all' && task.assigned_to !== assigneeFilter) return false
     return true
   })
 
@@ -254,7 +254,7 @@ export function TeamsTasksPage() {
         <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
           <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Asignado a" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             {members?.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -344,7 +344,7 @@ export function TeamsTasksPage() {
               <Select value={assignedTo} onValueChange={setAssignedTo}>
                 <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {members?.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                 </SelectContent>
               </Select>

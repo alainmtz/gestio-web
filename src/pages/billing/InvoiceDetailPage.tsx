@@ -56,7 +56,7 @@ export function InvoiceDetailPage() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash')
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('none')
   const [productSearch, setProductSearch] = useState('')
   const [openProductPopover, setOpenProductPopover] = useState<number | null>(null)
   const popoverRef = useRef<HTMLButtonElement>(null)
@@ -586,7 +586,7 @@ export function InvoiceDetailPage() {
                         <SelectValue placeholder="Sin equipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin equipo</SelectItem>
+                        <SelectItem value="none">Sin equipo</SelectItem>
                         {teamsData?.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             <div className="flex items-center gap-2">
@@ -597,7 +597,7 @@ export function InvoiceDetailPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {selectedTeamId && hasPermission(PERMISSIONS.TEAM_ASSIGN) && (
+                    {selectedTeamId !== 'none' && hasPermission(PERMISSIONS.TEAM_ASSIGN) && (
                       <Button size="sm" onClick={() => assignTeamMutation.mutate({ invoiceId: id!, teamId: selectedTeamId })} disabled={assignTeamMutation.isPending}>
                         {assignTeamMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Asignar'}
                       </Button>

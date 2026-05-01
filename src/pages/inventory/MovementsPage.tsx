@@ -548,14 +548,14 @@ export function MovementsPage() {
               <div className="space-y-2">
                 <Label>Proveedor (origen)</Label>
                 <Select
-                  value={editForm.reference_type === 'supplier' ? editForm.reference_id : ''}
-                  onValueChange={(v) => setEditForm({ ...editForm, reference_type: v ? 'supplier' : '', reference_id: v })}
+                  value={editForm.reference_type === 'supplier' ? (editForm.reference_id || 'none') : 'none'}
+                  onValueChange={(v) => setEditForm({ ...editForm, reference_type: v === 'none' ? '' : 'supplier', reference_id: v === 'none' ? '' : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar proveedor (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Sin proveedor —</SelectItem>
+                    <SelectItem value="none">— Sin proveedor —</SelectItem>
                     {suppliersData?.suppliers.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
@@ -571,14 +571,14 @@ export function MovementsPage() {
                   {editForm.movement_type === 'TRANSFER_IN' ? 'Tienda / Almacén origen' : 'Tienda en consignación'}
                 </Label>
                 <Select
-                  value={editForm.reference_type === 'store' ? editForm.reference_id : ''}
-                  onValueChange={(v) => setEditForm({ ...editForm, reference_type: v ? 'store' : editForm.reference_type, reference_id: v || editForm.reference_id })}
+                  value={editForm.reference_type === 'store' ? (editForm.reference_id || 'none') : 'none'}
+                  onValueChange={(v) => setEditForm({ ...editForm, reference_type: v === 'none' ? editForm.reference_type : 'store', reference_id: v === 'none' ? '' : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tienda origen (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Sin tienda origen —</SelectItem>
+                    <SelectItem value="none">— Sin tienda origen —</SelectItem>
                     {stores?.filter(s => s.id !== editForm.store_id).map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name} ({s.store_type === 'warehouse' ? 'Almacén' : 'Tienda'})

@@ -56,8 +56,8 @@ export function SchedulesPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [teamId, setTeamId] = useState('')
-  const [customerId, setCustomerId] = useState('')
-  const [storeId, setStoreId] = useState('')
+  const [customerId, setCustomerId] = useState('none')
+  const [storeId, setStoreId] = useState('none')
   const [startDate, setStartDate] = useState('')
   const [startTime, setStartTime] = useState('09:00')
   const [endDate, setEndDate] = useState('')
@@ -153,8 +153,8 @@ export function SchedulesPage() {
         .insert({
           organization_id: organizationId,
           team_id: teamId,
-          customer_id: customerId || null,
-          store_id: storeId || null,
+          customer_id: customerId === 'none' ? null : customerId,
+          store_id: storeId === 'none' ? null : storeId,
           title,
           description: description || null,
           start_time: startDateTime,
@@ -421,7 +421,7 @@ export function SchedulesPage() {
                 <Select value={customerId} onValueChange={setCustomerId}>
                   <SelectTrigger><SelectValue placeholder="Sin cliente" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin cliente</SelectItem>
+                    <SelectItem value="none">Sin cliente</SelectItem>
                     {customers?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -433,7 +433,7 @@ export function SchedulesPage() {
                 <Select value={storeId} onValueChange={setStoreId}>
                   <SelectTrigger><SelectValue placeholder="Sin tienda" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin tienda</SelectItem>
+                    <SelectItem value="none">Sin tienda</SelectItem>
                     {stores?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}

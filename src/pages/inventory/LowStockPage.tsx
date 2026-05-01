@@ -26,7 +26,7 @@ export function LowStockPage() {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const { hasPermission } = usePermissions()
   const [searchTerm, setSearchTerm] = useState('')
-  const [storeFilter, setStoreFilter] = useState('')
+  const [storeFilter, setStoreFilter] = useState('all')
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning'>('all')
   const [sortBy, setSortBy] = useState<'quantity' | 'ratio'>('ratio')
 
@@ -96,7 +96,7 @@ export function LowStockPage() {
   const filtered = (lowStockItems || [])
     .filter(item => {
       if (searchTerm && !item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) && !item.sku.toLowerCase().includes(searchTerm.toLowerCase())) return false
-      if (storeFilter && item.store_id !== storeFilter) return false
+      if (storeFilter !== 'all' && item.store_id !== storeFilter) return false
       if (severityFilter === 'critical' && item.quantity > 0) return false
       if (severityFilter === 'warning' && item.quantity === 0) return false
       return true
@@ -166,7 +166,7 @@ export function LowStockPage() {
             <Select value={storeFilter} onValueChange={setStoreFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todas las tiendas" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 {stores?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
