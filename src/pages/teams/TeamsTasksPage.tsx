@@ -100,9 +100,9 @@ export function TeamsTasksPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('organization_members')
-        .select('id, user_id, user:users(name)')
+        .select('id, user_id, user:profiles(full_name)')
         .eq('organization_id', organizationId)
-      return (data || []).map((m: any) => ({ id: m.id, user_id: m.user_id, name: m.user?.name || 'Sin nombre' })) as TeamMember[]
+      return (data || []).map((m: any) => ({ id: m.id, user_id: m.user_id, name: m.user?.full_name || 'Sin nombre' })) as TeamMember[]
     },
     enabled: !!organizationId,
   })
