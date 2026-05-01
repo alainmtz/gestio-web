@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Bell, X, CheckCheck, Trash2, Package, FileText, DollarSign, ClipboardList, AlertTriangle, Info } from 'lucide-react'
+import { Bell, CheckCheck, AlertTriangle, FileText, DollarSign, ClipboardList, Package, Info, Calendar, ArrowLeftRight, TrendingDown, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -9,33 +9,47 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { useNotificationStore, type AppNotification, type NotificationType } from '@/stores/notificationStore'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useUnreadCount, useNotifications, useMarkAllAsRead } from '@/hooks/useNotifications'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import type { NotificationType } from '@/api/notifications'
 
 const TYPE_CONFIG: Record<NotificationType, {
   icon: React.ComponentType<{ className?: string }>
   color: string
   bg: string
 }> = {
-  low_stock:    { icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900' },
-  new_invoice:  { icon: FileText,      color: 'text-blue-600',   bg: 'bg-blue-100 dark:bg-blue-900' },
-  payment:      { icon: DollarSign,    color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900' },
-  new_order:    { icon: Package,       color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900' },
-  consignment:  { icon: ClipboardList, color: 'text-amber-600',  bg: 'bg-amber-100 dark:bg-amber-900' },
-  info:         { icon: Info,          color: 'text-gray-600',   bg: 'bg-gray-100 dark:bg-gray-800' },
+  task_assigned: { icon: Calendar,     color: 'text-blue-600',   bg: 'bg-blue-100 dark:bg-blue-900' },
+  status_change: { icon: ArrowLeftRight, color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-900' },
+  low_stock:     { icon: TrendingDown,  color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900' },
+  transfer:      { icon: ArrowLeftRight, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900' },
+  movement:      { icon: Package,       color: 'text-cyan-600',   bg: 'bg-cyan-100 dark:bg-cyan-900' },
+  credit_note:   { icon: CreditCard,    color: 'text-red-600',    bg: 'bg-red-100 dark:bg-red-900' },
+  new_invoice:   { icon: FileText,      color: 'text-blue-600',   bg: 'bg-blue-100 dark:bg-blue-900' },
+  payment:       { icon: DollarSign,    color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900' },
+  consignment:   { icon: ClipboardList, color: 'text-amber-600',  bg: 'bg-amber-100 dark:bg-amber-900' },
+  new_order:     { icon: Package,       color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900' },
+  info:          { icon: Info,          color: 'text-gray-600',   bg: 'bg-gray-100 dark:bg-gray-800' },
 }
 
-function NotificationItem({ n, onDismiss }: { n: AppNotification; onDismiss: () => void }) {
+interface DBNotification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string
+  href: string | null
+  read: boolean
+  created_at: string
+}
+
+function NotificationItem({ n }: { n: DBNotification }) {
   const navigate = useNavigate()
-  const markRead = useNotificationStore((s) => s.markRead)
-  const cfg = TYPE_CONFIG[n.type]
+  const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.info
   const Icon = cfg.icon
 
   function handleClick() {
-    markRead(n.id)
     if (n.href) navigate(n.href)
-    onDismiss()
   }
 
   return (
@@ -55,7 +69,7 @@ function NotificationItem({ n, onDismiss }: { n: AppNotification; onDismiss: () 
         </p>
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          {formatDistanceToNow(n.createdAt, { addSuffix: true, locale: es })}
+          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
         </p>
       </div>
       {!n.read && (
@@ -66,8 +80,21 @@ function NotificationItem({ n, onDismiss }: { n: AppNotification; onDismiss: () 
 }
 
 export function NotificationsPanel() {
-  const { notifications, markAllRead, clearAll, remove } = useNotificationStore()
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const navigate = useNavigate()
+  const { data: unreadCount = 0 } = useUnreadCount()
+  const { data } = useNotifications({ limit: 10, offset: 0 })
+  const markAllAsRead = useMarkAllAsRead()
+  const zustandClearAll = useNotificationStore((s) => s.clearAll)
+
+  const notifications: DBNotification[] = (data?.notifications || []).map(n => ({
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    message: n.message,
+    href: n.href,
+    read: n.read,
+    created_at: n.created_at,
+  }))
 
   return (
     <Popover>
@@ -83,7 +110,6 @@ export function NotificationsPanel() {
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-80 p-0 bg-card border shadow-lg">
-        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">Notificaciones</span>
@@ -98,7 +124,7 @@ export function NotificationsPanel() {
                 size="icon"
                 className="h-7 w-7"
                 title="Marcar todas como leídas"
-                onClick={markAllRead}
+                onClick={() => markAllAsRead.mutate()}
               >
                 <CheckCheck className="h-4 w-4" />
               </Button>
@@ -109,37 +135,38 @@ export function NotificationsPanel() {
                 size="icon"
                 className="h-7 w-7 text-muted-foreground"
                 title="Limpiar todas"
-                onClick={clearAll}
+                onClick={() => zustandClearAll()}
               >
-                <Trash2 className="h-4 w-4" />
+                <Bell className="h-4 w-4" />
               </Button>
             )}
           </div>
         </div>
 
-        {/* List */}
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
             <Bell className="h-8 w-8 opacity-30" />
             <p className="text-sm">Sin notificaciones</p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[420px]">
-            <div className="divide-y">
-              {notifications.map((n) => (
-                <div key={n.id} className="relative group">
-                  <NotificationItem n={n} onDismiss={() => {}} />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); remove(n.id) }}
-                    className="absolute right-2 top-2 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                    title="Eliminar"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
+          <>
+            <ScrollArea className="max-h-[320px]">
+              <div className="divide-y">
+                {notifications.map((n) => (
+                  <NotificationItem key={n.id} n={n} />
+                ))}
+              </div>
+            </ScrollArea>
+            <div className="border-t p-2">
+              <Button
+                variant="ghost"
+                className="w-full text-sm"
+                onClick={() => navigate('/notifications')}
+              >
+                Ver todas las notificaciones
+              </Button>
             </div>
-          </ScrollArea>
+          </>
         )}
       </PopoverContent>
     </Popover>

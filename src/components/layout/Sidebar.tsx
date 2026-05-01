@@ -25,9 +25,11 @@ import {
   Shield,
   ShoppingCart,
   X,
+  Bell,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useRef, useCallback, useEffect, useState } from 'react'
+import { useUnreadCount } from '@/hooks/useNotifications'
 
 interface SidebarProps {
   collapsed: boolean
@@ -93,6 +95,7 @@ const mainNavItems = [
       { title: 'Tareas', icon: ClipboardList, href: '/teams/tasks' },
     ]
   },
+  { title: 'Notificaciones', icon: Bell, href: '/notifications' },
   { 
     title: 'Reportes', 
     icon: BarChart3, 

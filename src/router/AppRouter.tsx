@@ -29,6 +29,7 @@ import { TeamsPage } from '@/pages/teams/TeamsPage'
 import { TeamDetailPage } from '@/pages/teams/TeamDetailPage'
 import { SchedulesPage } from '@/pages/teams/SchedulesPage'
 import { TeamsTasksPage } from '@/pages/teams/TeamsTasksPage'
+import { NotificationsPage } from '@/pages/notifications'
 import { ReportsDashboardPage } from '@/pages/reports/ReportsDashboardPage'
 import { SalesReportPage } from '@/pages/reports/SalesReportPage'
 import { InventoryReportPage } from '@/pages/reports/InventoryReportPage'
@@ -118,6 +119,8 @@ export function AppRouter() {
           <Route path="schedules" element={<SchedulesPage />} />
           <Route path="tasks" element={<TeamsTasksPage />} />
         </Route>
+
+        <Route path="/notifications" element={<NotificationsPage />} />
 
         <Route path="/reports" element={<PermissionRoute permission={PERMISSIONS.REPORT_VIEW}><Outlet /></PermissionRoute>}>
           <Route index element={<ReportsDashboardPage />} />

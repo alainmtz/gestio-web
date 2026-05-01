@@ -330,7 +330,7 @@ export function SchedulesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 sm:justify-end">
-                      <Badge className={pCfg}>{pCfg.label}</Badge>
+                      <Badge className={pCfg.color}>{pCfg.label}</Badge>
                       <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${cfg.color}`}>
                         {schedule.status === 'CONFIRMED' && <Check className="h-3 w-3" />}
                         {schedule.status === 'CANCELLED' && <X className="h-3 w-3" />}
