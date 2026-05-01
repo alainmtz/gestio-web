@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import type { RealtimeChannel } from '@supabase/supabase-js'
+import { useAuthStore } from '@/stores/authStore'
 import * as api from '@/api/notifications'
 
 const NOTIFICATIONS_KEY = 'notifications'
@@ -12,52 +10,22 @@ export function useNotifications(options?: api.GetNotificationsOptions) {
   const organizationId = useAuthStore((s) => s.currentOrganization?.id)
   const queryClient = useQueryClient()
 
-  const query = useQuery({
+  return useQuery({
     queryKey: [NOTIFICATIONS_KEY, userId, organizationId, options],
     queryFn: () => {
       if (!userId || !organizationId) throw new Error('Missing user or org')
       return api.getNotifications(userId, organizationId, options)
     },
     enabled: !!userId && !!organizationId,
-    staleTime: 1000 * 30, // 30s
+    staleTime: 1000 * 30,
   })
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!userId || !organizationId) return
-
-    const channel: RealtimeChannel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          // Invalidate on any change to this user's notifications
-          queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId] })
-          queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId] })
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId, organizationId, queryClient])
-
-  return query
 }
 
 export function useUnreadCount() {
   const userId = useAuthStore((s) => s.user?.id)
   const organizationId = useAuthStore((s) => s.currentOrganization?.id)
-  const queryClient = useQueryClient()
 
-  const query = useQuery({
+  return useQuery({
     queryKey: [UNREAD_COUNT_KEY, userId, organizationId],
     queryFn: () => {
       if (!userId || !organizationId) throw new Error('Missing user or org')
@@ -66,8 +34,6 @@ export function useUnreadCount() {
     enabled: !!userId && !!organizationId,
     staleTime: 1000 * 30,
   })
-
-  return query
 }
 
 export function useMarkAsRead() {
@@ -141,5 +107,3 @@ export function useCreateNotifications() {
     mutationFn: api.createNotifications,
   })
 }
-
-import { useAuthStore } from '@/stores/authStore'
