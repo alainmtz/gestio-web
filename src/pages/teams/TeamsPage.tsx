@@ -185,15 +185,16 @@ export function TeamsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Equipos</h1>
-          <p className="text-muted-foreground">Gestiona tus equipos de trabajo</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Equipos</h1>
+          <p className="text-sm text-muted-foreground">Gestiona tus equipos de trabajo</p>
         </div>
         {hasPermission(PERMISSIONS.TEAM_CREATE) && (
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
-            Nuevo Equipo
+            <span className="hidden sm:inline">Nuevo Equipo</span>
+            <span className="sm:hidden">Nuevo</span>
           </Button>
         )}
       </div>
@@ -203,32 +204,33 @@ export function TeamsPage() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : teams && teams.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
             <Card key={team.id} className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full" style={{ backgroundColor: team.color }} />
-                <div>
-                  <h3 className="font-medium">{team.name}</h3>
+                <div className="h-10 w-10 rounded-full shrink-0" style={{ backgroundColor: team.color }} />
+                <div className="min-w-0">
+                  <h3 className="font-medium truncate">{team.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {teamMembers?.[team.id] || 0} miembros
                   </p>
                 </div>
               </div>
               {team.description && (
-                <p className="mt-2 text-sm text-muted-foreground">{team.description}</p>
+                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{team.description}</p>
               )}
               <div className="mt-4 flex gap-2">
-                <Link to={`/teams/${team.id}`}>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
+                <Link to={`/teams/${team.id}`} className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Gestionar
                   </Button>
                 </Link>
                 {hasPermission(PERMISSIONS.TEAM_DELETE) && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="text-destructive"
+                    className="text-destructive shrink-0"
                     onClick={() => handleDelete(team.id)}
                     disabled={isDeleting === team.id}
                   >

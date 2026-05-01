@@ -222,24 +222,28 @@ export function TeamsTasksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Tareas de Equipos</h1>
-          <p className="text-muted-foreground">Gestiona las tareas asignadas a los miembros del equipo</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tareas de Equipos</h1>
+          <p className="text-sm text-muted-foreground">Gestiona las tareas asignadas a los miembros del equipo</p>
         </div>
-        <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" /> Nueva Tarea</Button>
+        <Button onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">Nueva Tarea</span>
+          <span className="sm:hidden">Nueva</span>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-6"><div className="text-2xl font-bold">{(tasks || []).length}</div><p className="text-sm text-muted-foreground">Total</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="text-2xl font-bold text-muted-foreground">{pendingCount}</div><p className="text-sm text-muted-foreground">Pendientes</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="text-2xl font-bold text-blue-600">{inProgressCount}</div><p className="text-sm text-muted-foreground">En curso</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="text-2xl font-bold text-green-600">{completedCount}</div><p className="text-sm text-muted-foreground">Completadas</p></CardContent></Card>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card><CardContent className="pt-5"><div className="text-2xl font-bold">{(tasks || []).length}</div><p className="text-sm text-muted-foreground">Total</p></CardContent></Card>
+        <Card><CardContent className="pt-5"><div className="text-2xl font-bold text-muted-foreground">{pendingCount}</div><p className="text-sm text-muted-foreground">Pendientes</p></CardContent></Card>
+        <Card><CardContent className="pt-5"><div className="text-2xl font-bold text-blue-600">{inProgressCount}</div><p className="text-sm text-muted-foreground">En curso</p></CardContent></Card>
+        <Card><CardContent className="pt-5"><div className="text-2xl font-bold text-green-600">{completedCount}</div><p className="text-sm text-muted-foreground">Completadas</p></CardContent></Card>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Estado" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Estado" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Pendientes</SelectItem>
@@ -248,7 +252,7 @@ export function TeamsTasksPage() {
           </SelectContent>
         </Select>
         <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Asignado a" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Asignado a" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="">Todos</SelectItem>
             {members?.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
@@ -265,25 +269,27 @@ export function TeamsTasksPage() {
           {filtered.map(task => {
             const StatusIcon = STATUS_ICONS[task.status] || Clock
             return (
-              <div key={task.id} className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50">
-                <StatusIcon className={`h-5 w-5 ${task.status === 'completed' ? 'text-green-500' : task.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
-                  {task.description && <p className="text-xs text-muted-foreground truncate">{task.description}</p>}
+              <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border hover:bg-muted/50">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <StatusIcon className={`h-5 w-5 shrink-0 ${task.status === 'completed' ? 'text-green-500' : task.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-medium truncate ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
+                    {task.description && <p className="text-xs text-muted-foreground truncate">{task.description}</p>}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:justify-end">
                   <Badge className={PRIORITY_COLORS[task.priority]}>{PRIORITY_LABELS[task.priority]}</Badge>
                   <Badge className={STATUS_COLORS[task.status]}>{STATUS_LABELS[task.status]}</Badge>
                   {task.due_date && (
                     <Badge variant="outline" className="text-xs">{new Date(task.due_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</Badge>
                   )}
                   {task.assigned_to && (
-                    <span className="text-xs text-muted-foreground">{memberName(task.assigned_to)}</span>
+                    <span className="text-xs text-muted-foreground truncate max-w-[100px]">{memberName(task.assigned_to)}</span>
                   )}
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(task)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(task)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(task.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </div>
               </div>
             )

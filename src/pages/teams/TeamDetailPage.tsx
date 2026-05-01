@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ArrowLeft, Loader2, Plus, Trash2, UserPlus, Calendar, Check, X, Clock } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
@@ -155,18 +156,18 @@ export function TeamDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <Link to="/teams">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full" style={{ backgroundColor: team.color }} />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{team.name}</h1>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: team.color }} />
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">{team.name}</h1>
             {team.description && (
-              <p className="text-muted-foreground">{team.description}</p>
+              <p className="text-sm text-muted-foreground truncate">{team.description}</p>
             )}
           </div>
         </div>
@@ -174,12 +175,12 @@ export function TeamDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Miembros del Equipo ({members?.length || 0})</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-lg">Miembros del Equipo ({members?.length || 0})</CardTitle>
             {hasPermission(PERMISSIONS.TEAM_EDIT) && (
             <Button size="sm" onClick={() => setShowAddMember(true)}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Agregar
+              <span className="hidden sm:inline">Agregar</span>
             </Button>
             )}
           </CardHeader>
@@ -191,17 +192,17 @@ export function TeamDetailPage() {
             ) : members && members.length > 0 ? (
               <div className="space-y-2">
                 {members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm">
+                  <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm shrink-0">
                         {member.user?.full_name?.charAt(0) || '?'}
                       </div>
-                      <div>
-                        <p className="font-medium">{member.user?.full_name || 'Usuario'}</p>
-                        <p className="text-sm text-muted-foreground">{member.user?.email}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{member.user?.full_name || 'Usuario'}</p>
+                        <p className="text-sm text-muted-foreground truncate">{member.user?.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 sm:justify-end">
                       <span className={`text-xs px-2 py-1 rounded ${member.role === 'leader' ? 'bg-primary/10 text-primary' : 'bg-muted'}`}>
                         {member.role === 'leader' ? 'Líder' : 'Miembro'}
                       </span>
@@ -209,7 +210,7 @@ export function TeamDetailPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="text-destructive"
+                        className="text-destructive h-8 w-8"
                         onClick={() => removeMemberMutation.mutate(member.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -229,7 +230,7 @@ export function TeamDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Información</CardTitle>
+            <CardTitle className="text-lg">Información</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -254,8 +255,8 @@ export function TeamDetailPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Trabajos ({schedules?.length || 0})</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-lg">Trabajos ({schedules?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingSchedules ? (
@@ -265,19 +266,19 @@ export function TeamDetailPage() {
           ) : schedules && schedules.length > 0 ? (
             <div className="space-y-2">
               {schedules.map((schedule) => (
-                <div key={schedule.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <div key={schedule.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted shrink-0">
                       <Calendar className="h-4 w-4" />
                     </div>
-                    <div>
-                      <p className="font-medium">{schedule.invoice?.document_number || 'Sin número'}</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{schedule.invoice?.document_number || 'Sin número'}</p>
+                      <p className="text-sm text-muted-foreground truncate">
                         {schedule.invoice?.customer?.name || 'Sin cliente'} • Bs. {(schedule.invoice?.total || 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:justify-end">
                     <span className={`text-xs px-2 py-1 rounded ${
                       schedule.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                       schedule.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
@@ -292,7 +293,7 @@ export function TeamDetailPage() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="text-green-600"
+                        className="text-green-600 h-8 w-8"
                         onClick={() => confirmMutation.mutate(schedule.id)}
                         disabled={confirmMutation.isPending}
                       >
@@ -303,7 +304,7 @@ export function TeamDetailPage() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="text-blue-600"
+                        className="text-blue-600 h-8 w-8"
                         onClick={() => completeMutation.mutate(schedule.id)}
                         disabled={completeMutation.isPending}
                       >
@@ -314,7 +315,7 @@ export function TeamDetailPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="text-destructive"
+                        className="text-destructive h-8 w-8"
                         onClick={() => cancelMutation.mutate(schedule.id)}
                         disabled={cancelMutation.isPending}
                       >
@@ -333,10 +334,12 @@ export function TeamDetailPage() {
         </CardContent>
       </Card>
 
-      {showAddMember && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg w-[400px] space-y-4">
-            <h2 className="text-xl font-bold">Agregar Miembro</h2>
+      <Dialog open={showAddMember} onOpenChange={(open) => { if (!open) { setShowAddMember(false); setSelectedUserId(''); setSelectedRole('member') } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Miembro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Usuario</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -364,16 +367,16 @@ export function TeamDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddMember(false)}>Cancelar</Button>
-              <Button onClick={() => addMemberMutation.mutate()} disabled={!selectedUserId || addMemberMutation.isPending}>
-                {addMemberMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Agregar
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddMember(false)}>Cancelar</Button>
+            <Button onClick={() => addMemberMutation.mutate()} disabled={!selectedUserId || addMemberMutation.isPending}>
+              {addMemberMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Agregar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -90,6 +90,7 @@ const mainNavItems = [
     submenu: [
       { title: 'Equipos', icon: UsersRound, href: '/teams' },
       { title: 'Horarios', icon: CalendarDays, href: '/teams/schedules' },
+      { title: 'Tareas', icon: ClipboardList, href: '/teams/tasks' },
     ]
   },
   { 
