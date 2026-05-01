@@ -10,10 +10,11 @@ export function useProducts(options?: {
   pageSize?: number
 }) {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const currentStore = useAuthStore((state) => state.currentStore)
 
   return useQuery({
-    queryKey: ['products', organizationId, options],
-    queryFn: () => productsApi.getProducts(organizationId!, options),
+    queryKey: ['products', organizationId, currentStore?.id, options],
+    queryFn: () => productsApi.getProducts(organizationId!, { ...options, storeId: options?.storeId || currentStore?.id }),
     enabled: !!organizationId,
   })
 }

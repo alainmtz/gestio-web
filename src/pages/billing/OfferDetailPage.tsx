@@ -280,36 +280,36 @@ export function OfferDetailPage() {
   return (
     <>
     <form onSubmit={handleSubmit(onSubmit)} className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <Link to="/billing/offers">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {isNew ? 'Nueva Oferta' : `Oferta ${offer?.number || ''}`}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {isNew ? 'Crea una nueva oferta' : offer?.status ? `Estado: ${offer.status}` : ''}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {!isNew && offer && offer.status !== 'accepted' && hasPermission(PERMISSIONS.INVOICE_CREATE) && (
             <>
               <Button type="button" onClick={handleConvertToInvoice} disabled={convertToInvoiceMutation.isPending}>
                 {convertToInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck className="mr-2 h-4 w-4" />}
-                Factura
+                <span className="hidden sm:inline">Factura</span>
               </Button>
               <Button type="button" onClick={handleConvertToPreInvoice} disabled={convertToPreInvoiceMutation.isPending} variant="outline">
                 {convertToPreInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                Pre-factura
+                <span className="hidden sm:inline">Pre-factura</span>
               </Button>
               <Button type="button" onClick={() => setShowRejectDialog(true)} disabled={rejectMutation.isPending} variant="destructive">
                 {rejectMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-                Rechazar
+                <span className="hidden sm:inline">Rechazar</span>
               </Button>
             </>
           )}
@@ -319,7 +319,7 @@ export function OfferDetailPage() {
           {(isNew ? hasPermission(PERMISSIONS.OFFER_CREATE) : hasPermission(PERMISSIONS.OFFER_EDIT)) && (
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isNew ? 'Crear Oferta' : 'Guardar Cambios'}
+              {isNew ? 'Crear' : 'Guardar'}
             </Button>
           )}
         </div>
@@ -332,129 +332,133 @@ export function OfferDetailPage() {
               <CardTitle>Productos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {fields.map((field, index) => {
                   const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
                   const hasProduct = !!items?.[index]?.product_id
                   
                   return (
-                    <div key={field.id} className="flex gap-2 items-start border p-2 rounded">
-                      <div className="flex-1">
-                        <Popover open={openProductPopover === index} onOpenChange={(open) => {
-                          setOpenProductPopover(open ? index : null)
-                          if (!open) setProductSearch('')
-                        }}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn("w-full justify-between text-left", !hasProduct && "text-muted-foreground")}
-                              ref={popoverRef}
-                            >
-                              {hasProduct ? (
-                                <span className="flex items-center gap-2">
-                                  <Package className="h-4 w-4" />
-                                   <span>{items?.[index]?.description}</span>
-                                  <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
-                                </span>
-                              ) : (
-                                "Buscar producto..."
-                              )}
-                              <Search className="h-4 w-4 ml-2" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="p-0" align="start" side="bottom" sideOffset={4} style={{ width: popoverRef.current?.offsetWidth }}>
-                            <div className="p-2 border-b">
-                              <div className="relative">
-                                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                  placeholder="Buscar productos..."
-                                  className="pl-8"
-                                  value={productSearch}
-                                  onChange={(e) => setProductSearch(e.target.value)}
-                                  autoFocus
-                                />
-                              </div>
+                    <div key={field.id} className="rounded-lg border p-3 space-y-3">
+                      {/* Product selector */}
+                      <Popover open={openProductPopover === index} onOpenChange={(open) => {
+                        setOpenProductPopover(open ? index : null)
+                        if (!open) setProductSearch('')
+                      }}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-between text-left", !hasProduct && "text-muted-foreground")}
+                            ref={popoverRef}
+                          >
+                            {hasProduct ? (
+                              <span className="flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                 <span>{items?.[index]?.description}</span>
+                                <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
+                              </span>
+                            ) : (
+                              "Buscar producto..."
+                            )}
+                            <Search className="h-4 w-4 ml-2 shrink-0" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[calc(100vw-2rem)] sm:w-[400px]" align="start" side="bottom" sideOffset={4}>
+                          <div className="p-2 border-b">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                placeholder="Buscar productos..."
+                                className="pl-8"
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                                autoFocus
+                              />
                             </div>
-                            <div className="max-h-64 overflow-y-auto">
-                              {productsData?.products?.map(product => {
-                                const prodStock = getProductStock(product.id)
-                                return (
-                                  <div
-                                    key={product.id}
-                                    className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer"
-                                    onClick={() => addProduct(product, index)}
-                                  >
-                                    <div>
-                                      <p className="font-medium text-sm">{product.name}</p>
-                                      <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="font-medium text-sm">${product.price}</p>
-                                      <p className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        Stock: {prodStock}
-                                      </p>
-                                    </div>
+                          </div>
+                          <div className="max-h-64 overflow-y-auto">
+                            {productsData?.products?.map(product => {
+                              const prodStock = getProductStock(product.id)
+                              return (
+                                <div
+                                  key={product.id}
+                                  className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer"
+                                  onClick={() => addProduct(product, index)}
+                                >
+                                  <div>
+                                    <p className="font-medium text-sm">{product.name}</p>
+                                    <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
                                   </div>
-                                )
-                              })}
-                              {productsData?.products?.length === 0 && (
-                                <div className="text-center py-4 text-muted-foreground text-sm">
-                                  No se encontraron productos
+                                  <div className="text-right">
+                                    <p className="font-medium text-sm">${product.price}</p>
+                                    <p className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      Stock: {prodStock}
+                                    </p>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                              )
+                            })}
+                            {productsData?.products?.length === 0 && (
+                              <div className="text-center py-4 text-muted-foreground text-sm">
+                                No se encontraron productos
+                              </div>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Stock</Label>
+                          <Input value={stock} disabled className="text-center" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Cant *</Label>
+                          <Input
+                            type="number"
+                            {...register(`items.${index}.quantity` as const, { valueAsNumber: true })}
+                            min={1}
+                            max={stock > 0 ? stock : 1}
+                            className="text-center"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Precio</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })}
+                            className="text-right"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">%Tax</Label>
+                          <Input
+                            type="number"
+                            {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })}
+                            className="text-center"
+                          />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                          <Label className="text-xs text-muted-foreground">Total</Label>
+                          <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
+                        </div>
+                        <div className="flex items-end">
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => remove(index)} disabled={fields.length === 1}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="w-20">
-                        <Label className="text-xs text-muted-foreground">Stock</Label>
-                        <Input value={stock} disabled className="text-center" />
-                      </div>
-                      <div className="w-20">
-                        <Label className="text-xs text-muted-foreground">Cant *</Label>
-                        <Input
-                          type="number"
-                          {...register(`items.${index}.quantity` as const, { valueAsNumber: true })}
-                          min={1}
-                          max={stock > 0 ? stock : 1}
-                          className="text-center"
-                        />
-                      </div>
-                      <div className="w-24">
-                        <Label className="text-xs text-muted-foreground">Precio</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })}
-                          className="text-right"
-                        />
-                      </div>
-                      <div className="w-16">
-                        <Label className="text-xs text-muted-foreground">%Tax</Label>
-                        <Input
-                          type="number"
-                          {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })}
-                          className="text-center"
-                        />
-                      </div>
-                      <div className="w-20">
-                        <Label className="text-xs text-muted-foreground">Total</Label>
-                        <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
-                      </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
                     </div>
                   )
                 })}
               </div>
 
-              <div className="flex justify-between items-center mt-4">
-                <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 })}>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4 pt-4 border-t">
+                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 })}>
                   <Plus className="mr-2 h-4 w-4" />
                   Agregar Item
                 </Button>
-                <div className="text-right">
+                <div className="text-right space-y-0.5">
                   <p className="text-sm">Subtotal: ${totalSubtotal.toFixed(2)}</p>
                   <p className="text-sm">Descuento: -${totalDiscount.toFixed(2)}</p>
                   <p className="text-sm">Impuesto: +${totalTax.toFixed(2)}</p>
@@ -465,7 +469,7 @@ export function OfferDetailPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="order-first lg:order-none space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Detalles</CardTitle>

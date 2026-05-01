@@ -95,6 +95,7 @@ export async function syncFromElToque(organizationId: string): Promise<number> {
   const normalizedRates: Record<string, number> = {}
   for (const [rawCode, rawRate] of Object.entries(rawRates)) {
     const code = rawCode.trim().toUpperCase()
+      .replace('USDT_TRC20', 'USDT')
     if (typeof rawRate === 'number' && rawRate > 0) {
       normalizedRates[code] = rawRate
     }
@@ -145,15 +146,32 @@ export async function syncFromElToque(organizationId: string): Promise<number> {
     throw new Error('No se recibieron tasas válidas de ElToque.')
   }
 
-  const { data, error } = await supabase
-    .from('exchange_rates')
-    .upsert(ratesToInsert, {
-      onConflict: 'organization_id,base_currency_id,target_currency_id,date',
-      ignoreDuplicates: false,
-    })
-    .select('id')
+  let totalUpdated = 0
+  for (const rate of ratesToInsert) {
+    const { data: existing } = await supabase
+      .from('exchange_rates')
+      .select('id')
+      .eq('organization_id', rate.organization_id)
+      .eq('base_currency_id', rate.base_currency_id)
+      .eq('target_currency_id', rate.target_currency_id)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  if (error) throw error
+    if (existing) {
+      const { error } = await supabase
+        .from('exchange_rates')
+        .update({ rate: rate.rate, date: rate.date, source: rate.source })
+        .eq('id', existing.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabase
+        .from('exchange_rates')
+        .insert(rate)
+      if (error) throw error
+    }
+    totalUpdated++
+  }
 
-  return data?.length ?? ratesToInsert.length
+  return totalUpdated
 }

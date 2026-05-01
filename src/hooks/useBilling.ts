@@ -10,10 +10,11 @@ export function useOffers(options?: {
   pageSize?: number
 }) {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const currentStore = useAuthStore((state) => state.currentStore)
 
   return useQuery({
-    queryKey: ['offers', organizationId, options],
-    queryFn: () => billingApi.getOffers(organizationId!, options),
+    queryKey: ['offers', organizationId, currentStore?.id, options],
+    queryFn: () => billingApi.getOffers(organizationId!, { ...options, storeId: options?.storeId || currentStore?.id }),
     enabled: !!organizationId,
   })
 }
@@ -90,10 +91,11 @@ export function usePreInvoices(options?: {
   pageSize?: number
 }) {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const currentStore = useAuthStore((state) => state.currentStore)
 
   return useQuery({
-    queryKey: ['preInvoices', organizationId, options],
-    queryFn: () => billingApi.getPreInvoices(organizationId!, options),
+    queryKey: ['preInvoices', organizationId, currentStore?.id, options],
+    queryFn: () => billingApi.getPreInvoices(organizationId!, { ...options, storeId: options?.storeId || currentStore?.id }),
     enabled: !!organizationId,
   })
 }
@@ -142,10 +144,11 @@ export function useInvoices(options?: {
   pageSize?: number
 }) {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const currentStore = useAuthStore((state) => state.currentStore)
 
   return useQuery({
-    queryKey: ['invoices', organizationId, options],
-    queryFn: () => billingApi.getInvoices(organizationId!, options),
+    queryKey: ['invoices', organizationId, currentStore?.id, options],
+    queryFn: () => billingApi.getInvoices(organizationId!, { ...options, storeId: options?.storeId || currentStore?.id }),
     enabled: !!organizationId,
   })
 }

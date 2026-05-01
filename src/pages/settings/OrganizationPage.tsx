@@ -29,6 +29,10 @@ export function OrganizationPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
+  const { organizations, setOrganizations } = useAuthStore((state) => ({
+    organizations: state.organizations,
+    setOrganizations: state.setOrganizations,
+  }))
   const organization = useAuthStore((state) => state.currentOrganization)
   const selectOrganization = useAuthStore((state) => state.selectOrganization)
   const organizationId = organization?.id
@@ -125,7 +129,11 @@ export function OrganizationPage() {
       queryClient.invalidateQueries({ queryKey: ['organizationDetails'] })
       // Update org name in global auth store so header reflects change immediately
       if (organization && name) {
-        selectOrganization({ ...organization, name })
+        const updatedOrg = { ...organization, name }
+        selectOrganization(updatedOrg)
+        setOrganizations(
+          organizations.map((org) => org.id === organization.id ? updatedOrg : org)
+        )
       }
       toast({ title: 'Configuración guardada', variant: 'default' })
     },

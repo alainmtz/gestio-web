@@ -66,7 +66,16 @@ export async function getExchangeRates(params: GetExchangeRatesParams): Promise<
 
   const { data, error } = await query
   if (error) throw error
-  return data || []
+
+  const latestByPair = new Map<string, ExchangeRate>()
+  for (const rate of data || []) {
+    const key = `${rate.base_currency_id}-${rate.target_currency_id}`
+    if (!latestByPair.has(key)) {
+      latestByPair.set(key, rate)
+    }
+  }
+
+  return Array.from(latestByPair.values())
 }
 
 export interface CreateExchangeRateInput {
