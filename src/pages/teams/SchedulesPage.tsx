@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
+import { createNotifications } from '@/api/notifications'
 
 interface WorkSchedule {
   id: string
@@ -166,12 +167,27 @@ export function SchedulesPage() {
         .select()
         .single()
       if (error) throw error
-      return data
+      return { data, startDateTime }
     },
-    onSuccess: () => {
+    onSuccess: async ({ data: schedule, startDateTime }) => {
       queryClient.invalidateQueries({ queryKey: ['work_schedules'] })
       toast({ title: 'Trabajo creado', description: 'El trabajo se ha programado correctamente' })
       resetForm()
+
+      const teamMembers = queryClient.getQueryData<any[]>(['team_members', teamId])
+      if (teamMembers?.length) {
+        try {
+          await createNotifications(teamMembers.map((m: any) => ({
+            user_id: m.user_id,
+            organization_id: organizationId!,
+            type: 'task_assigned' as const,
+            title: 'Nuevo trabajo asignado',
+            message: `${title} - ${new Date(startDateTime).toLocaleString('es-ES')}`,
+            href: '/teams/schedules',
+            metadata: { schedule_id: schedule.id, team_id: teamId },
+          })))
+        } catch {}
+      }
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -200,9 +216,26 @@ export function SchedulesPage() {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: async (_data, { id, status }) => {
       queryClient.invalidateQueries({ queryKey: ['work_schedules'] })
       toast({ title: 'Estado actualizado' })
+
+      const schedule = (queryClient.getQueryData<any[]>(['work_schedules']) || []).find((s: any) => s.id === id)
+      if (schedule && userId) {
+        const statusLabels: Record<string, string> = { CONFIRMED: 'confirmado', COMPLETED: 'completado', CANCELLED: 'cancelado' }
+        const notificationType: 'status_change' = 'status_change'
+        try {
+          await createNotifications([{
+            user_id: userId,
+            organization_id: organizationId!,
+            type: notificationType,
+            title: `Trabajo ${statusLabels[status] || status}`,
+            message: `${schedule.title} - Estado: ${statusLabels[status] || status}`,
+            href: '/teams/schedules',
+            metadata: { schedule_id: id, new_status: status },
+          }])
+        } catch {}
+      }
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
