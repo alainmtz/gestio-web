@@ -86,7 +86,7 @@ export function NotificationsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={filter} onValueChange={(v) => { setFilter(v as any); setPage(0) }}>
+        <Select value={filter} onValueChange={(v) => { setFilter(v as 'all' | 'unread' | 'read'); setPage(0) }}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
@@ -96,7 +96,7 @@ export function NotificationsPage() {
             <SelectItem value="read">Leídas</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as any); setPage(0) }}>
+        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as NotificationType | 'all'); setPage(0) }}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>

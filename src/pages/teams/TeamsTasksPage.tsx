@@ -314,7 +314,7 @@ export function TeamsTasksPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Prioridad</Label>
-                <Select value={priority} onValueChange={v => setPriority(v as any)}>
+                <Select value={priority} onValueChange={v => setPriority(v as 'low' | 'medium' | 'high')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Baja</SelectItem>
@@ -325,7 +325,7 @@ export function TeamsTasksPage() {
               </div>
               <div className="space-y-2">
                 <Label>Estado</Label>
-                <Select value={status} onValueChange={v => setStatus(v as any)}>
+                <Select value={status} onValueChange={v => setStatus(v as 'pending' | 'in_progress' | 'completed')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pendiente</SelectItem>

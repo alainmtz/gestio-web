@@ -186,7 +186,9 @@ export function SchedulesPage() {
             href: '/teams/schedules',
             metadata: { schedule_id: schedule.id, team_id: teamId },
           })))
-        } catch {}
+        } catch {
+          // Notification failure is non-critical for schedule creation
+        }
       }
     },
     onError: (error: Error) => {
@@ -223,7 +225,7 @@ export function SchedulesPage() {
       const schedule = (queryClient.getQueryData<any[]>(['work_schedules']) || []).find((s: any) => s.id === id)
       if (schedule && userId) {
         const statusLabels: Record<string, string> = { CONFIRMED: 'confirmado', COMPLETED: 'completado', CANCELLED: 'cancelado' }
-        const notificationType: 'status_change' = 'status_change'
+        const notificationType = 'status_change' as const
         try {
           await createNotifications([{
             user_id: userId,
@@ -234,7 +236,9 @@ export function SchedulesPage() {
             href: '/teams/schedules',
             metadata: { schedule_id: id, new_status: status },
           }])
-        } catch {}
+        } catch {
+          // Notification failure is non-critical for status updates
+        }
       }
     },
     onError: (error: Error) => {

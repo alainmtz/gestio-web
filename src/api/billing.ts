@@ -329,7 +329,8 @@ export async function createOffer(organizationId: string, userId: string, input:
 
   if (error) throw error
 
-  await supabase.from('offer_items').insert(itemRows.map((r) => ({ ...r, offer_id: offer.id })))
+  const { error: itemsError } = await supabase.from('offer_items').insert(itemRows.map((r) => ({ ...r, offer_id: offer.id })))
+  if (itemsError) throw itemsError
   return { ...offer, items: itemRows as unknown as OfferItem[] }
 }
 
@@ -433,7 +434,8 @@ export async function createInvoice(organizationId: string, userId: string, inpu
   if (error) throw error
 
   if (itemRows.length > 0) {
-    await supabase.from('invoice_items').insert(itemRows.map((r) => ({ ...r, invoice_id: invoice.id })))
+    const { error: itemsError } = await supabase.from('invoice_items').insert(itemRows.map((r) => ({ ...r, invoice_id: invoice.id })))
+    if (itemsError) throw itemsError
   }
 
   for (const item of itemRows) {

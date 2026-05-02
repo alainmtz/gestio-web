@@ -135,7 +135,7 @@ export function POSPage() {
       }
 
       const { data } = await query
-      return (data as any) || []
+      return (data as unknown as Product[]) || []
     },
     enabled: !!organizationId,
   })

@@ -178,7 +178,9 @@ export async function getSession(): Promise<Session | null> {
   return data.session
 }
 
-export async function getOrganizations() {
+type OrgWithRole = { id: string; name: string; slug: string; tax_id: string | null; logo_url: string | null; role: string }
+
+export async function getOrganizations(): Promise<OrgWithRole[]> {
   const { data: sessionData } = await supabase.auth.getSession()
   if (!sessionData.session?.user) return []
 
@@ -198,8 +200,15 @@ export async function getOrganizations() {
     .eq('user_id', sessionData.session.user.id)
     .eq('is_active', true)
 
-  return data?.map((m) => ({
-    ...(m.organizations as any),
-    role: m.role,
-  })) || []
+  return data?.map((m) => {
+    const org = (m.organizations as unknown) as { id: string; name: string; slug: string; tax_id: string | null; logo_url: string | null } | null
+    return {
+      id: org?.id ?? '',
+      name: org?.name ?? '',
+      slug: org?.slug ?? '',
+      tax_id: org?.tax_id ?? null,
+      logo_url: org?.logo_url ?? null,
+      role: m.role,
+    }
+  }) || []
 }

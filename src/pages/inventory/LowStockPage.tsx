@@ -22,6 +22,15 @@ interface LowStockItem {
   category_name?: string
 }
 
+interface InventoryRow {
+  id: string
+  product_id: string
+  store_id: string
+  quantity: number
+  product: { name: string; sku: string; cost: number; category?: { name: string } } | null
+  store: { name: string } | null
+}
+
 export function LowStockPage() {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const { hasPermission } = usePermissions()
@@ -72,7 +81,7 @@ export function LowStockPage() {
       })
 
       const items: LowStockItem[] = []
-      for (const inv of inventory as any[]) {
+      for (const inv of (inventory as unknown) as InventoryRow[]) {
         const threshold = thresholdMap.get(inv.product_id)?.get(inv.store_id) ?? 10
         if (inv.quantity < threshold) {
           items.push({
@@ -170,7 +179,7 @@ export function LowStockPage() {
                 {stores?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={severityFilter} onValueChange={v => setSeverityFilter(v as any)}>
+            <Select value={severityFilter} onValueChange={v => setSeverityFilter(v as 'all' | 'critical' | 'warning')}>
               <SelectTrigger className="w-[150px]"><SelectValue placeholder="Severidad" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
@@ -178,7 +187,7 @@ export function LowStockPage() {
                 <SelectItem value="warning">Stock bajo</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
+            <Select value={sortBy} onValueChange={v => setSortBy(v as 'quantity' | 'ratio')}>
               <SelectTrigger className="w-[150px]"><SelectValue placeholder="Ordenar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ratio">Menor ratio</SelectItem>

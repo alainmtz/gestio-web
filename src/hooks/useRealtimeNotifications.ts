@@ -50,7 +50,9 @@ export function useRealtimeNotifications() {
                   href: '/inventory/products',
                   metadata: { product_id: row.product_id, store_id: row.store_id },
                 }])
-              } catch {}
+              } catch {
+                // Notification creation is non-critical for low_stock alerts
+              }
             }
           }
         }
@@ -87,7 +89,9 @@ export function useRealtimeNotifications() {
                 href: `/billing/invoices/${row.id}`,
                 metadata: { invoice_id: row.id },
               }])
-            } catch {}
+            } catch {
+              // Notification creation is non-critical for invoice events
+            }
           }
         }
       )
@@ -121,7 +125,9 @@ export function useRealtimeNotifications() {
                   href: `/billing/invoices/${newRow.id}`,
                   metadata: { invoice_id: newRow.id },
                 }])
-              } catch {}
+              } catch {
+                // Notification creation is non-critical for payment events
+              }
             }
           }
         }
@@ -162,7 +168,9 @@ export function useRealtimeNotifications() {
                 href: `/consignments/${row.id}`,
                 metadata: { consignment_id: row.id },
               }])
-            } catch {}
+            } catch {
+              // Notification creation is non-critical for consignment events
+            }
           }
         }
       )
@@ -198,7 +206,9 @@ export function useRealtimeNotifications() {
                 href: `/billing/offers/${row.id}`,
                 metadata: { offer_id: row.id },
               }])
-            } catch {}
+            } catch {
+              // Notification creation is non-critical for offer events
+            }
           }
         }
       )
