@@ -16,8 +16,8 @@ Gestio Web es la versión web del sistema CRM empresarial Gestio v2, construido 
 
 | Capa | Tecnología |
 |------|------------|
-| **Frontend** | React 18 + TypeScript + Vite |
-| **Routing** | React Router v6 |
+| **Frontend** | React 19 + TypeScript + Vite 7 |
+| **Routing** | React Router v7 |
 | **Estado Server** | TanStack Query v5 |
 | **Estado Global** | Zustand |
 | **UI Framework** | TailwindCSS + shadcn/ui |
