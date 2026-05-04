@@ -88,20 +88,24 @@ export function ExchangeRatesPage() {
   }) || []
 
   const chartData = useMemo(() => {
-    if (!historyRates || !currencies) return []
+    if (!historyRates || !currencies) return { rows: [], pairKeys: [], pairLabels: new Map<string, string>() }
 
     const currencyCodeById = new Map(currencies.map((c) => [c.id, c.code]))
 
     const groupedByPair = new Map<string, { date: string; baseCode: string; targetCode: string; rate: number; timestamp: number }[]>()
+    const pairLabels = new Map<string, string>()
     for (const r of historyRates) {
-      const pairKey = `${r.base_currency_id}-${r.target_currency_id}`
+      const baseCode = r.base_currency?.code ?? currencyCodeById.get(r.base_currency_id) ?? ''
+      const targetCode = r.target_currency?.code ?? currencyCodeById.get(r.target_currency_id) ?? ''
+      const pairKey = `${r.base_currency_id}|${r.target_currency_id}`
       if (!groupedByPair.has(pairKey)) {
         groupedByPair.set(pairKey, [])
+        pairLabels.set(pairKey, `${baseCode} → ${targetCode}`)
       }
       groupedByPair.get(pairKey)!.push({
         date: r.date,
-        baseCode: r.base_currency?.code ?? currencyCodeById.get(r.base_currency_id) ?? '',
-        targetCode: r.target_currency?.code ?? currencyCodeById.get(r.target_currency_id) ?? '',
+        baseCode,
+        targetCode,
         rate: r.rate,
         timestamp: new Date(r.date).getTime(),
       })
@@ -110,16 +114,20 @@ export function ExchangeRatesPage() {
     const allDates = [...new Set(historyRates.map((r) => r.date))].sort()
     const pairEntries = Array.from(groupedByPair.entries())
 
-    return allDates.map((date) => {
-      const entry: Record<string, string | number> = { date }
-      for (const [pairKey, points] of pairEntries) {
-        const point = points.find((p) => p.date === date)
-        if (point) {
-          entry[pairKey] = point.rate
+    return {
+      rows: allDates.map((date) => {
+        const entry: Record<string, string | number> = { date }
+        for (const [pairKey, points] of pairEntries) {
+          const point = points.find((p) => p.date === date)
+          if (point) {
+            entry[pairKey] = point.rate
+          }
         }
-      }
-      return entry
-    })
+        return entry
+      }),
+      pairKeys: pairEntries.map(([k]) => k),
+      pairLabels,
+    }
   }, [historyRates, currencies])
 
   const pairColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
@@ -343,7 +351,7 @@ export function ExchangeRatesPage() {
         </Select>
       </div>
 
-      {chartData.length > 0 && (
+      {chartData.rows.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -356,7 +364,7 @@ export function ExchangeRatesPage() {
               <Skeleton className="h-[280px] w-full" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={chartData}>
+                <AreaChart data={chartData.rows}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.15)" />
                   <XAxis
                     dataKey="date"
@@ -379,27 +387,15 @@ export function ExchangeRatesPage() {
                     }}
                     formatter={(value: number, name: string) => [
                       value.toFixed(4),
-                      name,
+                      chartData.pairLabels.get(name) ?? name,
                     ]}
                     labelFormatter={(label: string) => `Fecha: ${label}`}
                   />
                   <Legend
                     wrapperStyle={{ fontSize: '12px' }}
-                    formatter={(name: string) => {
-                      const [baseId, targetId] = name.split('-')
-                      const baseCode = currencies?.find((c) => c.id === baseId)?.code ?? baseId.slice(0, 4)
-                      const targetCode = currencies?.find((c) => c.id === targetId)?.code ?? targetId.slice(0, 4)
-                      return `${baseCode} → ${targetCode}`
-                    }}
+                    formatter={(name: string) => chartData.pairLabels.get(name) ?? name}
                   />
-                  {Array.from(
-                    new Map(
-                      historyRates!.map((r) => [
-                        `${r.base_currency_id}-${r.target_currency_id}`,
-                        `${r.base_currency_id}-${r.target_currency_id}`,
-                      ])
-                    ).entries()
-                  ).map(([pairKey], i) => (
+                  {chartData.pairKeys.map((pairKey, i) => (
                     <Area
                       key={pairKey}
                       type="monotone"
