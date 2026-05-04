@@ -13,4 +13,21 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-tanstack': ['@tanstack/react-query', '@tanstack/react-table'],
+          'vendor-radix': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-popover', '@radix-ui/react-tooltip', '@radix-ui/react-avatar', '@radix-ui/react-separator', '@radix-ui/react-slot', '@radix-ui/react-alert-dialog', '@radix-ui/react-checkbox', '@radix-ui/react-switch', '@radix-ui/react-label', '@radix-ui/react-toast'],
+          'vendor-recharts': ['recharts'],
+          'vendor-lucide': ['lucide-react'],
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'vendor-utils': ['date-fns', 'currency.js', 'papaparse', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
 })
