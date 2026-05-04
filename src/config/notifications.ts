@@ -20,4 +20,5 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
   consignment:   { icon: ClipboardList,  color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/40',   label: 'Consignación' },
   new_order:     { icon: Package,        color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/40', label: 'Orden' },
   info:          { icon: Info,           color: 'text-gray-600 dark:text-gray-400',   bg: 'bg-gray-100 dark:bg-gray-800/40',      label: 'Info' },
+  exchange_rate_change: { icon: ArrowLeftRight, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/40', label: 'Tasa de cambio' },
 }

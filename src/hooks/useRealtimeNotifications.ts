@@ -214,7 +214,62 @@ export function useRealtimeNotifications() {
       )
       .subscribe()
 
-    channelsRef.current = [inventoryChannel, invoicesChannel, consignmentsChannel, offersChannel]
+    const exchangeRatesChannel = supabase
+      .channel(`org-exchange-rates-${organizationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'exchange_rates',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        async (payload) => {
+          const row = payload.new as { base_currency_id: string; target_currency_id: string; rate: number } | null
+          const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number } | null
+          const eventType = payload.eventType
+
+          let title: string
+          let message: string
+
+          if (eventType === 'INSERT') {
+            title = 'Nueva tasa de cambio'
+            message = `Tasa ${row?.base_currency_id || ''} → ${row?.target_currency_id || ''} = ${(row?.rate ?? 0).toFixed(4)}`
+          } else if (eventType === 'UPDATE') {
+            title = 'Tasa de cambio actualizada'
+            message = `${oldRow?.base_currency_id || ''} → ${oldRow?.target_currency_id || ''}: ${oldRow?.rate?.toFixed(4) ?? '?'} → ${(row?.rate ?? 0).toFixed(4)}`
+          } else {
+            title = 'Tasa de cambio eliminada'
+            message = `Una tasa de cambio ha sido eliminada.`
+          }
+
+          addNotification({
+            type: 'exchange_rate_change',
+            title,
+            message,
+            href: '/settings/exchange',
+          })
+
+          if (isAdmin) {
+            try {
+              await createNotifications([{
+                user_id: userId,
+                organization_id: organizationId,
+                type: 'exchange_rate_change',
+                title,
+                message,
+                href: '/settings/exchange',
+                metadata: { event: eventType },
+              }])
+            } catch {
+              // Notification creation is non-critical for exchange rate events
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    channelsRef.current = [inventoryChannel, invoicesChannel, consignmentsChannel, offersChannel, exchangeRatesChannel]
 
     return () => {
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch))

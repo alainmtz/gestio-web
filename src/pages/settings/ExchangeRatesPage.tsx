@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCurrencies, useExchangeRates, useCreateExchangeRate, useDeleteExchangeRate } from '@/hooks/useSettings'
 import { useElToqueToken, useSyncFromElToque, useSaveElToqueToken } from '@/hooks/useElToque'
+import { useCreateNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
+import { useAuthStore } from '@/stores/authStore'
 
 export function ExchangeRatesPage() {
   const [baseCurrency, setBaseCurrency] = useState<string>('')
@@ -58,10 +60,13 @@ export function ExchangeRatesPage() {
   })
   const createRate = useCreateExchangeRate()
   const deleteRate = useDeleteExchangeRate()
+  const createNotification = useCreateNotification()
   const { data: savedToken } = useElToqueToken()
   const syncFromElToque = useSyncFromElToque()
   const saveToken = useSaveElToqueToken()
   const { toast } = useToast()
+  const userId = useAuthStore((s) => s.user?.id)
+  const organizationId = useAuthStore((s) => s.currentOrganization?.id)
 
   const hasToken = !!savedToken
 
@@ -116,6 +121,17 @@ export function ExchangeRatesPage() {
     try {
       const count = await syncFromElToque.mutateAsync()
       toast({ title: 'Sincronización exitosa', description: `${count} tasas actualizadas desde ElToque`, variant: 'default' })
+
+      if (userId && organizationId) {
+        createNotification.mutate({
+          user_id: userId,
+          organization_id: organizationId,
+          type: 'exchange_rate_change',
+          title: 'Tasas sincronizadas',
+          message: `${count} tasas de cambio actualizadas desde ElToque.`,
+          href: '/settings/exchange',
+        })
+      }
     } catch (error) {
       showErrorToast(toast, error, 'No se pudo sincronizar desde ElToque')
     }

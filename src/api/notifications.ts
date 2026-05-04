@@ -12,6 +12,7 @@ export type NotificationType =
   | 'consignment'
   | 'new_order'
   | 'info'
+  | 'exchange_rate_change'
 
 export interface Notification {
   id: string
