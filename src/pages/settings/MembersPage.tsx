@@ -113,7 +113,6 @@ export function MembersPage() {
           organization_id: organizationId,
           email: inviteEmail,
           role: inviteRole,
-          role_id: inviteRoleId !== 'none' ? inviteRoleId : null,
           invited_by: currentUserId,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         })
