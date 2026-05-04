@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useCurrencies, useExchangeRates, useCreateExchangeRate, useDeleteExchangeRate } from '@/hooks/useSettings'
+import { useState, useMemo } from 'react'
+import { useCurrencies, useExchangeRates, useExchangeRateHistory, useCreateExchangeRate, useDeleteExchangeRate } from '@/hooks/useSettings'
 import { useElToqueToken, useSyncFromElToque, useSaveElToqueToken } from '@/hooks/useElToque'
 import { useCreateNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 
 export function ExchangeRatesPage() {
   const [baseCurrency, setBaseCurrency] = useState<string>('')
@@ -58,6 +68,7 @@ export function ExchangeRatesPage() {
     baseCurrencyId: baseCurrency || undefined,
     targetCurrencyId: targetCurrency || undefined,
   })
+  const { data: historyRates, isLoading: historyLoading } = useExchangeRateHistory(7)
   const createRate = useCreateExchangeRate()
   const deleteRate = useDeleteExchangeRate()
   const createNotification = useCreateNotification()
@@ -75,6 +86,43 @@ export function ExchangeRatesPage() {
     if (targetCurrency && r.target_currency_id !== targetCurrency) return false
     return true
   }) || []
+
+  const chartData = useMemo(() => {
+    if (!historyRates || !currencies) return []
+
+    const currencyCodeById = new Map(currencies.map((c) => [c.id, c.code]))
+
+    const groupedByPair = new Map<string, { date: string; baseCode: string; targetCode: string; rate: number; timestamp: number }[]>()
+    for (const r of historyRates) {
+      const pairKey = `${r.base_currency_id}-${r.target_currency_id}`
+      if (!groupedByPair.has(pairKey)) {
+        groupedByPair.set(pairKey, [])
+      }
+      groupedByPair.get(pairKey)!.push({
+        date: r.date,
+        baseCode: r.base_currency?.code ?? currencyCodeById.get(r.base_currency_id) ?? '',
+        targetCode: r.target_currency?.code ?? currencyCodeById.get(r.target_currency_id) ?? '',
+        rate: r.rate,
+        timestamp: new Date(r.date).getTime(),
+      })
+    }
+
+    const allDates = [...new Set(historyRates.map((r) => r.date))].sort()
+    const pairEntries = Array.from(groupedByPair.entries())
+
+    return allDates.map((date) => {
+      const entry: Record<string, string | number> = { date }
+      for (const [pairKey, points] of pairEntries) {
+        const point = points.find((p) => p.date === date)
+        if (point) {
+          entry[pairKey] = point.rate
+        }
+      }
+      return entry
+    })
+  }, [historyRates, currencies])
+
+  const pairColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
   const handleCreate = async () => {
     if (!formData.baseCurrencyId || !formData.targetCurrencyId || !formData.rate || !formData.date) {
@@ -294,6 +342,82 @@ export function ExchangeRatesPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {chartData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5" />
+              Historial de Tasas (7 días)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.15)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(d: string) => {
+                      const parts = d.split('-')
+                      return `${parts[1]}/${parts[2]}`
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(v: number) => v.toFixed(2)}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}
+                    formatter={(value: number, name: string) => [
+                      value.toFixed(4),
+                      name,
+                    ]}
+                    labelFormatter={(label: string) => `Fecha: ${label}`}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: '12px' }}
+                    formatter={(name: string) => {
+                      const [baseId, targetId] = name.split('-')
+                      const baseCode = currencies?.find((c) => c.id === baseId)?.code ?? baseId.slice(0, 4)
+                      const targetCode = currencies?.find((c) => c.id === targetId)?.code ?? targetId.slice(0, 4)
+                      return `${baseCode} → ${targetCode}`
+                    }}
+                  />
+                  {Array.from(
+                    new Map(
+                      historyRates!.map((r) => [
+                        `${r.base_currency_id}-${r.target_currency_id}`,
+                        `${r.base_currency_id}-${r.target_currency_id}`,
+                      ])
+                    ).entries()
+                  ).map(([pairKey], i) => (
+                    <Area
+                      key={pairKey}
+                      type="monotone"
+                      dataKey={pairKey}
+                      stroke={pairColors[i % pairColors.length]}
+                      fill={pairColors[i % pairColors.length]}
+                      fillOpacity={0.08}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      name={pairKey}
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

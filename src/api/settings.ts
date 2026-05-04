@@ -146,6 +146,26 @@ export async function getLatestExchangeRate(
   return data
 }
 
+export async function getExchangeRateHistory(
+  organizationId: string,
+  days: number = 7
+): Promise<ExchangeRate[]> {
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+  const endDate = new Date()
+
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('*, base_currency:currencies!base_currency_id(code), target_currency:currencies!target_currency_id(code)')
+    .eq('organization_id', organizationId)
+    .gte('date', startDate.toISOString().split('T')[0])
+    .lte('date', endDate.toISOString().split('T')[0])
+    .order('date', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export async function getLatestRatesToCupByCodes(
   organizationId: string,
   codes: string[],

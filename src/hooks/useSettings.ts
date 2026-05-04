@@ -71,6 +71,16 @@ export function useLatestExchangeRate(baseCurrencyId: string, targetCurrencyId: 
   })
 }
 
+export function useExchangeRateHistory(days: number = 7) {
+  const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+
+  return useQuery({
+    queryKey: ['exchangeRateHistory', organizationId, days],
+    queryFn: () => settingsApi.getExchangeRateHistory(organizationId!, days),
+    enabled: !!organizationId,
+  })
+}
+
 export function useLatestRatesToCupByCodes(codes: string[]) {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const normalizedCodes = Array.from(new Set(codes.map((c) => c.trim().toUpperCase()).filter(Boolean))).sort()
