@@ -225,15 +225,29 @@ export function useRealtimeNotifications() {
           const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
           const eventType = payload.eventType
 
+          const currencyId = row?.base_currency_id ?? oldRow?.base_currency_id ?? ''
+          const { data: currencies } = await supabase
+            .from('currencies')
+            .select('id, code')
+            .in('id', [row?.base_currency_id, row?.target_currency_id, oldRow?.base_currency_id, oldRow?.target_currency_id].filter(Boolean) as string[])
+
+          const codeMap = new Map<string, string>()
+          currencies?.forEach((c: { id: string; code: string }) => codeMap.set(c.id, c.code))
+
+          const baseCode = codeMap.get(row?.base_currency_id ?? oldRow?.base_currency_id ?? '') ?? ''
+          const targetCode = codeMap.get(row?.target_currency_id ?? oldRow?.target_currency_id ?? '') ?? ''
+
           let title: string
           let message: string
           let metadata: Record<string, unknown> = {}
 
           if (eventType === 'INSERT') {
             title = 'Nueva tasa de cambio'
-            message = `Tasa ${row?.base_currency_id || ''} → ${row?.target_currency_id || ''} = ${(row?.rate ?? 0).toFixed(4)}`
+            message = `Tasa ${baseCode} → ${targetCode} = ${(row?.rate ?? 0).toFixed(4)}`
             metadata = {
               event: 'INSERT',
+              base_currency_code: baseCode,
+              target_currency_code: targetCode,
               base_currency_id: row?.base_currency_id,
               target_currency_id: row?.target_currency_id,
               new_rate: row?.rate,
@@ -243,9 +257,11 @@ export function useRealtimeNotifications() {
             }
           } else if (eventType === 'UPDATE') {
             title = 'Tasa de cambio actualizada'
-            message = `${oldRow?.base_currency_id || ''} → ${oldRow?.target_currency_id || ''}: ${oldRow?.rate?.toFixed(4) ?? '?'} → ${(row?.rate ?? 0).toFixed(4)}`
+            message = `${baseCode} → ${targetCode}: ${oldRow?.rate?.toFixed(4) ?? '?'} → ${(row?.rate ?? 0).toFixed(4)}`
             metadata = {
               event: 'UPDATE',
+              base_currency_code: baseCode,
+              target_currency_code: targetCode,
               base_currency_id: row?.base_currency_id ?? oldRow?.base_currency_id,
               target_currency_id: row?.target_currency_id ?? oldRow?.target_currency_id,
               old_rate: oldRow?.rate,
@@ -261,6 +277,8 @@ export function useRealtimeNotifications() {
             message = `Una tasa de cambio ha sido eliminada.`
             metadata = {
               event: 'DELETE',
+              base_currency_code: baseCode,
+              target_currency_code: targetCode,
               base_currency_id: oldRow?.base_currency_id,
               target_currency_id: oldRow?.target_currency_id,
               old_rate: oldRow?.rate,

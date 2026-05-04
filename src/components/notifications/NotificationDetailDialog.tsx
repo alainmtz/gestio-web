@@ -27,6 +27,8 @@ function ExchangeRateDetails({ metadata }: { metadata: Record<string, unknown> }
   const oldCreatedAt = metadata.old_rate_created_at as string | undefined
   const newCreatedAt = metadata.new_rate_created_at as string | undefined
   const source = metadata.source as string | undefined
+  const baseCode = metadata.base_currency_code as string | undefined
+  const targetCode = metadata.target_currency_code as string | undefined
 
   const rateDiff = (oldRate !== undefined && newRate !== undefined) ? newRate - oldRate : undefined
 
@@ -42,8 +44,13 @@ function ExchangeRateDetails({ metadata }: { metadata: Record<string, unknown> }
       variant === 'old' ? 'bg-muted/50' : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
     )}>
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
-      {rate !== undefined && (
-        <p className="text-2xl font-bold font-mono">{rate.toFixed(4)}</p>
+      {rate !== undefined && baseCode && targetCode && (
+        <div>
+          <p className="text-2xl font-bold font-mono">{rate.toFixed(4)}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            1 {baseCode} = {rate.toFixed(4)} {targetCode}
+          </p>
+        </div>
       )}
       <div className="space-y-0.5 text-xs text-muted-foreground">
         {date && <p>Fecha de tasa: {formatDateTime(date)}</p>}
@@ -58,10 +65,17 @@ function ExchangeRateDetails({ metadata }: { metadata: Record<string, unknown> }
         Detalle de tasa de cambio
       </p>
 
-      {source && (
-        <Badge variant="outline" className="text-xs">
-          Fuente: {source === 'eltoque' ? 'ElToque' : source}
-        </Badge>
+      {baseCode && targetCode && (
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-semibold">
+            {baseCode} → {targetCode}
+          </Badge>
+          {source && (
+            <Badge variant="outline" className="text-xs">
+              Fuente: {source === 'eltoque' ? 'ElToque' : source}
+            </Badge>
+          )}
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
