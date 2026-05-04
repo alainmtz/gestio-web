@@ -221,22 +221,53 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { base_currency_id: string; target_currency_id: string; rate: number } | null
-          const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number } | null
+          const row = payload.new as { id?: string; base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
+          const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
           const eventType = payload.eventType
 
           let title: string
           let message: string
+          let metadata: Record<string, unknown> = {}
 
           if (eventType === 'INSERT') {
             title = 'Nueva tasa de cambio'
             message = `Tasa ${row?.base_currency_id || ''} → ${row?.target_currency_id || ''} = ${(row?.rate ?? 0).toFixed(4)}`
+            metadata = {
+              event: 'INSERT',
+              base_currency_id: row?.base_currency_id,
+              target_currency_id: row?.target_currency_id,
+              new_rate: row?.rate,
+              new_rate_date: row?.date,
+              new_rate_created_at: row?.created_at,
+              source: row?.source,
+            }
           } else if (eventType === 'UPDATE') {
             title = 'Tasa de cambio actualizada'
             message = `${oldRow?.base_currency_id || ''} → ${oldRow?.target_currency_id || ''}: ${oldRow?.rate?.toFixed(4) ?? '?'} → ${(row?.rate ?? 0).toFixed(4)}`
+            metadata = {
+              event: 'UPDATE',
+              base_currency_id: row?.base_currency_id ?? oldRow?.base_currency_id,
+              target_currency_id: row?.target_currency_id ?? oldRow?.target_currency_id,
+              old_rate: oldRow?.rate,
+              old_rate_date: oldRow?.date,
+              old_rate_created_at: oldRow?.created_at,
+              new_rate: row?.rate,
+              new_rate_date: row?.date,
+              new_rate_created_at: row?.created_at,
+              source: row?.source ?? oldRow?.source,
+            }
           } else {
             title = 'Tasa de cambio eliminada'
             message = `Una tasa de cambio ha sido eliminada.`
+            metadata = {
+              event: 'DELETE',
+              base_currency_id: oldRow?.base_currency_id,
+              target_currency_id: oldRow?.target_currency_id,
+              old_rate: oldRow?.rate,
+              old_rate_date: oldRow?.date,
+              old_rate_created_at: oldRow?.created_at,
+              source: oldRow?.source,
+            }
           }
 
           addNotification({
@@ -255,7 +286,7 @@ export function useRealtimeNotifications() {
                 title,
                 message,
                 href: '/settings/exchange',
-                metadata: { event: eventType },
+                metadata,
               }])
             } catch {
               // Notification creation is non-critical for exchange rate events
