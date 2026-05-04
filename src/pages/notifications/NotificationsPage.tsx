@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Bell, CheckCheck, Trash2, Loader2, Search } from 'lucide-react'
-import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useClearReadNotifications } from '@/hooks/useNotifications'
+import { Bell, CheckCheck, Trash2, Loader2, Search, Eye } from 'lucide-react'
+import { useNotifications, useNotification, useUnreadCount, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useClearReadNotifications } from '@/hooks/useNotifications'
 import { NOTIFICATION_TYPE_CONFIG } from '@/config/notifications'
+import { NotificationDetailDialog } from '@/components/notifications/NotificationDetailDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +37,7 @@ export function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
   const [typeFilter, setTypeFilter] = useState<NotificationType | 'all'>('all')
   const [search, setSearch] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const { data, isLoading } = useNotifications({
     limit: PAGE_SIZE,
@@ -45,6 +47,7 @@ export function NotificationsPage() {
   })
 
   const { data: unreadCount } = useUnreadCount()
+  const { data: selectedNotification } = useNotification(selectedId)
   const markAsRead = useMarkAsRead()
   const markAllAsRead = useMarkAllAsRead()
   const deleteNotification = useDeleteNotification()
@@ -65,7 +68,7 @@ export function NotificationsPage() {
 
   function handleNotificationClick(n: typeof notifications[number]) {
     if (!n.read) markAsRead.mutate(n.id)
-    if (n.href) window.location.href = n.href
+    setSelectedId(n.id)
   }
 
   const paginationRange = useMemo(() => {
@@ -218,6 +221,18 @@ export function NotificationsPage() {
                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={(e) => {
                       e.stopPropagation()
+                      setSelectedId(n.id)
+                    }}
+                    aria-label="Ver detalles"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation()
                       deleteNotification.mutate(n.id)
                     }}
                     aria-label="Eliminar notificación"
@@ -272,6 +287,12 @@ export function NotificationsPage() {
           </PaginationContent>
         </Pagination>
       )}
+
+      <NotificationDetailDialog
+        notification={selectedNotification || null}
+        open={!!selectedId}
+        onOpenChange={(open) => { if (!open) setSelectedId(null) }}
+      />
     </div>
   )
 }

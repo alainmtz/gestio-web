@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, Trash2 } from 'lucide-react'
+import { Bell, CheckCheck, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -10,8 +10,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { useUnreadCount, useNotifications, useMarkAllAsRead, useClearReadNotifications } from '@/hooks/useNotifications'
+import { useNotification, useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead, useClearReadNotifications } from '@/hooks/useNotifications'
 import { NOTIFICATION_TYPE_CONFIG } from '@/config/notifications'
+import { NotificationDetailDialog } from '@/components/notifications/NotificationDetailDialog'
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { NotificationType } from '@/api/notifications'
@@ -55,25 +56,31 @@ function groupByDate(notifications: DBNotification[]): { group: DateGroupKey; it
     .map(g => ({ group: g, items: map.get(g)! }))
 }
 
-function NotificationItem({ n, onClose }: { n: DBNotification; onClose: () => void }) {
+function NotificationItem({ n, onOpenDetail }: { n: DBNotification; onOpenDetail: (id: string) => void }) {
   const navigate = useNavigate()
   const cfg = NOTIFICATION_TYPE_CONFIG[n.type] || NOTIFICATION_TYPE_CONFIG.info
   const Icon = cfg.icon
 
   function handleClick() {
-    onClose()
+    onOpenDetail(n.id)
+  }
+
+  function handleNavigate(e: React.MouseEvent) {
+    e.stopPropagation()
     if (n.href) navigate(n.href)
   }
 
   return (
-    <button
-      type="button"
+    <div
       className={cn(
-        'w-full flex items-start gap-3 rounded-lg p-3 cursor-pointer transition-colors hover:bg-muted/60 text-left',
+        'flex items-start gap-3 rounded-lg p-3 cursor-pointer transition-colors hover:bg-muted/60',
         !n.read && 'bg-muted/30'
       )}
       onClick={handleClick}
+      role="button"
+      tabIndex={0}
       aria-label={`Notificación: ${n.title}`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick() } }}
     >
       <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full', cfg.bg)}>
         <Icon className={cn('h-4 w-4', cfg.color)} />
@@ -87,18 +94,32 @@ function NotificationItem({ n, onClose }: { n: DBNotification; onClose: () => vo
           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
         </p>
       </div>
-      {!n.read && (
-        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-      )}
-    </button>
+      <div className="flex flex-col gap-1 shrink-0">
+        {!n.read && <span className="h-2 w-2 self-center rounded-full bg-primary" />}
+        {n.href && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleNavigate}
+            aria-label="Ir a la notificación"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
   )
 }
 
 export function NotificationsPanel() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const { data: unreadCount = 0 } = useUnreadCount()
   const { data } = useNotifications({ limit: 10, offset: 0 })
+  const { data: detailNotification } = useNotification(detailId)
+  const markAsRead = useMarkAsRead()
   const markAllAsRead = useMarkAllAsRead()
   const clearRead = useClearReadNotifications()
 
@@ -115,13 +136,20 @@ export function NotificationsPanel() {
   const grouped = groupByDate(notifications)
   const hasNew = unreadCount > 0
 
+  function handleOpenDetail(id: string) {
+    const n = notifications.find(n => n.id === id)
+    if (n && !n.read) markAsRead.mutate(id)
+    setDetailId(id)
+  }
+
   function handleViewAll() {
     setOpen(false)
     navigate('/notifications')
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificaciones">
           <Bell className={cn('h-5 w-5 transition-transform', hasNew && 'animate-[bell-ring_0.5s_ease-in-out]')} />
@@ -187,7 +215,7 @@ export function NotificationsPanel() {
                       {DATE_GROUP_LABELS[group]}
                     </div>
                     {items.map((n) => (
-                      <NotificationItem key={n.id} n={n} onClose={() => setOpen(false)} />
+                      <NotificationItem key={n.id} n={n} onOpenDetail={handleOpenDetail} />
                     ))}
                   </div>
                 ))}
@@ -206,5 +234,12 @@ export function NotificationsPanel() {
         )}
       </PopoverContent>
     </Popover>
+
+    <NotificationDetailDialog
+      notification={detailNotification || null}
+      open={!!detailId}
+      onOpenChange={(open) => { if (!open) setDetailId(null) }}
+    />
+    </>
   )
 }

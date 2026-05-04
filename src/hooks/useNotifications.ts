@@ -5,6 +5,18 @@ import * as api from '@/api/notifications'
 const NOTIFICATIONS_KEY = 'notifications'
 const UNREAD_COUNT_KEY = 'unread-count'
 
+export function useNotification(id: string | null) {
+  const userId = useAuthStore((s) => s.user?.id)
+  const organizationId = useAuthStore((s) => s.currentOrganization?.id)
+
+  return useQuery({
+    queryKey: ['notification', id],
+    queryFn: () => api.getNotification(id!),
+    enabled: !!id,
+    staleTime: 1000 * 30,
+  })
+}
+
 export function useNotifications(options?: api.GetNotificationsOptions) {
   const userId = useAuthStore((s) => s.user?.id)
   const organizationId = useAuthStore((s) => s.currentOrganization?.id)

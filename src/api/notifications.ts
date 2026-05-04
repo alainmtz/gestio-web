@@ -87,6 +87,17 @@ export async function getUnreadCount(
   return data?.length ?? 0
 }
 
+export async function getNotification(notificationId: string): Promise<Notification> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('id', notificationId)
+    .single()
+
+  if (error) throw error
+  return data as Notification
+}
+
 export async function markAsRead(notificationId: string): Promise<void> {
   const { error } = await supabase
     .from('notifications')
