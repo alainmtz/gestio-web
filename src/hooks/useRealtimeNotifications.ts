@@ -26,16 +26,16 @@ export function useRealtimeNotifications() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'inventory_items',
+          table: 'inventory',
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { available_quantity: number; product_id: string; store_id?: string }
-          if (row.available_quantity <= LOW_STOCK_THRESHOLD && row.available_quantity >= 0) {
+          const row = payload.new as { available: number; product_id: string; store_id?: string }
+          if (row.available <= LOW_STOCK_THRESHOLD && row.available >= 0) {
             addNotification({
               type: 'low_stock',
               title: 'Stock bajo',
-              message: `Un producto tiene solo ${row.available_quantity} unidades disponibles.`,
+                  message: `Un producto tiene solo ${row.available} unidades disponibles.`,
               href: '/inventory/products',
             })
 
@@ -46,7 +46,7 @@ export function useRealtimeNotifications() {
                   organization_id: organizationId,
                   type: 'low_stock',
                   title: 'Stock bajo',
-                  message: `Un producto tiene solo ${row.available_quantity} unidades disponibles.`,
+              message: `Un producto tiene solo ${row.available} unidades disponibles.`,
                   href: '/inventory/products',
                   metadata: { product_id: row.product_id, store_id: row.store_id },
                 }])
@@ -141,17 +141,15 @@ export function useRealtimeNotifications() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'consignments',
+          table: 'consignment_stock',
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { id: string; partner_name?: string }
+          const row = payload.new as { id: string; partner_id: string }
           addNotification({
             type: 'consignment',
             title: 'Nueva consignación',
-            message: row.partner_name
-              ? `Consignación de ${row.partner_name} registrada.`
-              : 'Se registró una nueva consignación.',
+            message: 'Se registró una nueva consignación.',
             href: `/consignments/${row.id}`,
           })
 
@@ -162,9 +160,7 @@ export function useRealtimeNotifications() {
                 organization_id: organizationId,
                 type: 'consignment',
                 title: 'Nueva consignación',
-                message: row.partner_name
-                  ? `Consignación de ${row.partner_name} registrada.`
-                  : 'Se registró una nueva consignación.',
+                message: 'Se registró una nueva consignación.',
                 href: `/consignments/${row.id}`,
                 metadata: { consignment_id: row.id },
               }])
