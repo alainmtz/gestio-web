@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Users, UserPlus, Trash2, Loader2, Shield, Mail, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
@@ -296,6 +296,9 @@ export function MembersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Invitar Nuevo Miembro</DialogTitle>
+            <DialogDescription>
+              Envía una invitación por email para que un usuario se una a tu organización.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -360,11 +363,10 @@ export function MembersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cambiar rol de permisos</DialogTitle>
+            <DialogDescription>
+              Asigna un rol de permisos a un miembro de la organización.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Asigna un rol de permisos a{' '}
-            <strong>{editingMember?.user?.full_name || editingMember?.user?.email}</strong>.
-          </p>
           <div className="space-y-2">
             <Label>Rol de permisos</Label>
             <Select value={editRoleId} onValueChange={setEditRoleId}>

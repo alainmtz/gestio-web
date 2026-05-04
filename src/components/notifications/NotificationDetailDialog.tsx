@@ -1,6 +1,6 @@
 import { NOTIFICATION_TYPE_CONFIG } from '@/config/notifications'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -142,6 +142,9 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
               <p className="text-sm text-muted-foreground mt-0.5">
                 {formatDate(notification.created_at)}
               </p>
+              <DialogDescription className="sr-only">
+                {notification.message}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>

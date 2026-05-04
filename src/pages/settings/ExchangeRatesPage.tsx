@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -250,6 +251,9 @@ export function ExchangeRatesPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Nueva Tasa de Cambio</DialogTitle>
+                <DialogDescription>
+                  Agrega una nueva tasa de cambio entre dos monedas.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -489,6 +493,9 @@ export function ExchangeRatesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Token de ElToque</DialogTitle>
+            <DialogDescription>
+              Configure su token de API para sincronizar tasas automáticamente.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
