@@ -318,11 +318,11 @@ export function ExchangeRatesPage() {
                       <p className="font-medium">
                         {rate.base_currency?.code} → {rate.target_currency?.code}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {rate.date} · {rate.source === 'eltoque' && (
                           <Badge variant="secondary">ElToque</Badge>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
