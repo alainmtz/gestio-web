@@ -107,15 +107,14 @@ export function MembersPage() {
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('organization_invitations')
-        .insert({
+      const { error } = await supabase.functions.invoke('send-invitation', {
+        body: {
           organization_id: organizationId,
           email: inviteEmail,
           role: inviteRole,
           invited_by: currentUserId,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
+        },
+      })
       if (error) throw error
     },
     onSuccess: () => {
