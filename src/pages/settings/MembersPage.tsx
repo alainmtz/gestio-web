@@ -107,6 +107,7 @@ export function MembersPage() {
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error('No hay organización seleccionada')
       const { error } = await supabase.functions.invoke('send-invitation', {
         body: {
           organization_id: organizationId,
