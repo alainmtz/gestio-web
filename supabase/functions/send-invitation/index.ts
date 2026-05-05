@@ -91,20 +91,34 @@ Deno.serve(async (req: Request) => {
         throw memberError
       }
 
-      // Send email: you've been invited, login to accept
+      const userExists = true
+      const emailHtml = `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:#f5f5f5;border-radius:8px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;">${inviterName[0]?.toUpperCase()}</div>
+            <div>
+              <p style="margin:0;font-size:14px;color:#666;">${inviterName} te invita a unirte a</p>
+              <p style="margin:4px 0 0;font-size:20px;font-weight:bold;">${org.name}</p>
+            </div>
+          </div>
+          <p style="font-size:14px;color:#333;">Rol: <strong>${role === 'owner' ? 'Propietario' : role === 'admin' ? 'Administrador' : 'Miembro'}</strong></p>
+          ${userExists
+            ? '<p style="font-size:14px;color:#333;">Como ya tienes una cuenta, solo necesitas iniciar sesión y aceptar la invitación.</p>'
+            : '<p style="font-size:14px;color:#333;">Crea una cuenta para aceptar la invitación y comenzar a trabajar.</p>'
+          }
+          <a href="${userExists ? `${APP_URL}/auth/login?invite=pending` : acceptUrl}"
+             style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;">
+            ${userExists ? 'Iniciar sesión y aceptar' : 'Aceptar invitación'}
+          </a>
+          ${!userExists ? '<p style="color:#999;font-size:12px;">Este enlace expira en 7 días.</p>' : ''}
+          <p style="color:#999;font-size:12px;">Si no esperabas esta invitación, puedes ignorar este correo.</p>
+        </div>
+      `
+
       await sendEmail({
         to: email,
         subject: `${inviterName} te invita a unirte a ${org.name}`,
-        html: `
-          <h2>¡Has sido invitado a ${org.name}!</h2>
-          <p>${inviterName} te ha invitado a unirte a su organización en Gestio.</p>
-          <p>Como ya tienes una cuenta, solo necesitas iniciar sesión y aceptar la invitación.</p>
-          <a href="${APP_URL}/auth/login?invite=pending"
-             style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;">
-            Iniciar sesión y aceptar
-          </a>
-          <p style="color:#666;font-size:12px;">Si no esperabas esta invitación, puedes ignorar este correo.</p>
-        `,
+        html: emailHtml,
       })
 
       return new Response(
@@ -129,20 +143,33 @@ Deno.serve(async (req: Request) => {
 
       const acceptUrl = `${APP_URL}/accept-invitation/${invitation.invitation_token}`
 
-      // Send email: register and join
-      await sendEmail({
-        to: email,
-        subject: `${inviterName} te invita a unirte a ${org.name}`,
-        html: `
-          <h2>¡Has sido invitado a ${org.name}!</h2>
-          <p>${inviterName} te ha invitado a unirte a su organización en Gestio.</p>
-          <p>Crea una cuenta para aceptar la invitación y comenzar a trabajar.</p>
+      if (inviteError) throw inviteError
+
+      const acceptUrl = `${APP_URL}/accept-invitation/${invitation.invitation_token}`
+
+      const emailHtml = `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:#f5f5f5;border-radius:8px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;">${inviterName[0]?.toUpperCase()}</div>
+            <div>
+              <p style="margin:0;font-size:14px;color:#666;">${inviterName} te invita a unirte a</p>
+              <p style="margin:4px 0 0;font-size:20px;font-weight:bold;">${org.name}</p>
+            </div>
+          </div>
+          <p style="font-size:14px;color:#333;">Rol: <strong>${role === 'owner' ? 'Propietario' : role === 'admin' ? 'Administrador' : 'Miembro'}</strong></p>
+          <p style="font-size:14px;color:#333;">Crea una cuenta para aceptar la invitación y comenzar a trabajar.</p>
           <a href="${acceptUrl}"
              style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px;margin:16px 0;">
             Aceptar invitación
           </a>
-          <p style="color:#666;font-size:12px;">Este enlace expira en 7 días. Si no esperabas esta invitación, puedes ignorar este correo.</p>
-        `,
+          <p style="color:#999;font-size:12px;">Este enlace expira en 7 días. Si no esperabas esta invitación, puedes ignorar este correo.</p>
+        </div>
+      `
+
+      await sendEmail({
+        to: email,
+        subject: `${inviterName} te invita a unirte a ${org.name}`,
+        html: emailHtml,
       })
 
       return new Response(

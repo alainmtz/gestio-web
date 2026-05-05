@@ -209,6 +209,19 @@ export function AcceptInvitationPage() {
           )}
 
           <div className="space-y-2 rounded-lg border p-4">
+            <div className="flex items-center gap-3 pb-3 border-b">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-medium">{invitation.inviter_name?.[0]?.toUpperCase() || '?'}</span>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Te invita</p>
+                <p className="font-medium">{invitation.inviter_name}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-sm text-muted-foreground">Organización</span>
+              <span className="font-medium">{invitation.organization_name}</span>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Email</span>
               <span className="font-medium">{invitation.email}</span>
