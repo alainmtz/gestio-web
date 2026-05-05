@@ -167,6 +167,32 @@ export function RegisterPage() {
           .update({ accepted_at: new Date().toISOString() })
           .eq('invitation_token', inviteToken)
 
+        const { data: owners } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', invitation.organization_id)
+          .neq('user_id', userId)
+
+        if (owners && owners.length > 0) {
+          await supabase
+            .from('notifications')
+            .insert(
+              owners.map((o) => ({
+                user_id: o.user_id,
+                organization_id: invitation.organization_id,
+                type: 'member_joined',
+                title: 'Nuevo miembro',
+                message: `${data.email} se ha unido a la organización como ${inviteData.role === 'owner' ? 'Propietario' : inviteData.role === 'admin' ? 'Administrador' : 'Miembro'}.`,
+                href: '/settings/members',
+                metadata: {
+                  member_email: data.email,
+                  member_role: inviteData.role,
+                  joined_at: new Date().toISOString(),
+                },
+              }))
+            )
+        }
+
         const { data: org } = await supabase
           .from('organizations')
           .select('*')

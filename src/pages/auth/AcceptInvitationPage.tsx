@@ -105,6 +105,39 @@ export function AcceptInvitationPage() {
         .from('organization_invitations')
         .update({ accepted_at: new Date().toISOString() })
         .eq('id', invitation.id)
+
+      const { data: owners } = await supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', invitation.organization_id)
+        .eq('role', 'owner')
+        .neq('user_id', user.id)
+
+      if (owners && owners.length > 0) {
+        const { data: newMember } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', user.id)
+          .single()
+
+        await supabase
+          .from('notifications')
+          .insert(
+            owners.map((o) => ({
+              user_id: o.user_id,
+              organization_id: invitation.organization_id,
+              type: 'member_joined',
+              title: 'Nuevo miembro',
+              message: `${invitation.email} se ha unido a la organización como ${invitation.role === 'owner' ? 'Propietario' : invitation.role === 'admin' ? 'Administrador' : 'Miembro'}.`,
+              href: '/settings/members',
+              metadata: {
+                member_email: invitation.email,
+                member_role: invitation.role,
+                joined_at: new Date().toISOString(),
+              },
+            }))
+          )
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al aceptar invitación')
     } finally {

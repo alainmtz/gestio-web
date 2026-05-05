@@ -143,10 +143,6 @@ Deno.serve(async (req: Request) => {
 
       const acceptUrl = `${APP_URL}/accept-invitation/${invitation.invitation_token}`
 
-      if (inviteError) throw inviteError
-
-      const acceptUrl = `${APP_URL}/accept-invitation/${invitation.invitation_token}`
-
       const emailHtml = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:#f5f5f5;border-radius:8px;">

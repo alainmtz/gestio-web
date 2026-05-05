@@ -65,6 +65,34 @@ export function PendingInvitationBanner() {
                       toast({ title: 'Error', description: error.message, variant: 'destructive' })
                     } else {
                       toast({ title: 'Invitación aceptada', description: `Ahora eres miembro de ${member.organization?.name}` })
+
+                      const orgId = member.organization_id
+                      const { data: owners } = await supabase
+                        .from('organization_members')
+                        .select('user_id')
+                        .eq('organization_id', orgId)
+                        .neq('user_id', userId)
+
+                      if (owners && owners.length > 0) {
+                        const memberEmail = useAuthStore.getState().user?.email ?? ''
+                        await supabase
+                          .from('notifications')
+                          .insert(
+                            owners.map((o) => ({
+                              user_id: o.user_id,
+                              organization_id: orgId,
+                              type: 'member_joined',
+                              title: 'Nuevo miembro',
+                              message: `${memberEmail} se ha unido a la organización.`,
+                              href: '/settings/members',
+                              metadata: {
+                                member_email: memberEmail,
+                                member_role: member.role,
+                                joined_at: new Date().toISOString(),
+                              },
+                            }))
+                          )
+                      }
                     }
                     setAccepting(null)
                   }}

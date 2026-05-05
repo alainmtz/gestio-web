@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Notification } from '@/api/notifications'
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, User } from 'lucide-react'
 
 interface NotificationDetailDialogProps {
   notification: Notification | null
@@ -16,6 +16,38 @@ interface NotificationDetailDialogProps {
 function formatDateTime(dateStr: string | undefined | null) {
   if (!dateStr) return '—'
   return format(new Date(dateStr), "d MMM yyyy, HH:mm", { locale: es })
+}
+
+function MemberJoinedDetails({ metadata }: { metadata: Record<string, unknown> }) {
+  const email = metadata.member_email as string | undefined
+  const role = metadata.member_role as string | undefined
+  const joinedAt = metadata.joined_at as string | undefined
+
+  const roleLabel = role === 'owner' ? 'Propietario' : role === 'admin' ? 'Administrador' : 'Miembro'
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        Detalle del nuevo miembro
+      </p>
+
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/40">
+          <User className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate">{email || '—'}</p>
+          <p className="text-xs text-muted-foreground">{roleLabel}</p>
+        </div>
+      </div>
+
+      {joinedAt && (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <p>Se unió: {formatDateTime(joinedAt)}</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ExchangeRateDetails({ metadata }: { metadata: Record<string, unknown> }) {
@@ -165,6 +197,10 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
 
           {hasRateMetadata && (
             <ExchangeRateDetails metadata={notification.metadata} />
+          )}
+
+          {notification.type === 'member_joined' && (
+            <MemberJoinedDetails metadata={notification.metadata} />
           )}
 
           {notification.metadata && !hasRateMetadata && Object.keys(notification.metadata).length > 0 && (
