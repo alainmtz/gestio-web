@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 import { Link } from 'react-router-dom'
+import { ExchangeRatesCard } from '@/components/dashboard/ExchangeRatesCard'
 
 interface DashboardMetrics {
   salesThisMonth: number
@@ -388,7 +389,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Ventas por Día</CardTitle>
@@ -471,6 +472,8 @@ export function DashboardPage() {
             </Link>
           </CardContent>
         </Card>
+
+        <ExchangeRatesCard />
       </div>
     </div>
   )

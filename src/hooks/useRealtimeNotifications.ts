@@ -295,20 +295,18 @@ export function useRealtimeNotifications() {
             href: '/settings/exchange',
           })
 
-          if (isAdmin) {
-            try {
-              await createNotifications([{
-                user_id: userId,
-                organization_id: organizationId,
-                type: 'exchange_rate_change',
-                title,
-                message,
-                href: '/settings/exchange',
-                metadata,
-              }])
-            } catch {
-              // Notification creation is non-critical for exchange rate events
-            }
+          try {
+            await createNotifications([{
+              user_id: userId,
+              organization_id: organizationId,
+              type: 'exchange_rate_change',
+              title,
+              message,
+              href: '/settings/exchange',
+              metadata,
+            }])
+          } catch {
+            // Notification creation is non-critical for exchange rate events
           }
         }
       )
