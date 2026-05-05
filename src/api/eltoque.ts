@@ -154,14 +154,13 @@ export async function syncFromElToque(organizationId: string): Promise<number> {
       .eq('organization_id', rate.organization_id)
       .eq('base_currency_id', rate.base_currency_id)
       .eq('target_currency_id', rate.target_currency_id)
-      .order('date', { ascending: false })
-      .limit(1)
+      .eq('date', rate.date)
       .maybeSingle()
 
     if (existing) {
       const { error } = await supabase
         .from('exchange_rates')
-        .update({ rate: rate.rate, date: rate.date, source: rate.source })
+        .update({ rate: rate.rate, source: rate.source })
         .eq('id', existing.id)
       if (error) throw error
     } else {
