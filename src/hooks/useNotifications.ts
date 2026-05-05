@@ -51,12 +51,13 @@ export function useUnreadCount() {
 export function useMarkAsRead() {
   const queryClient = useQueryClient()
   const userId = useAuthStore((s) => s.user?.id)
+  const organizationId = useAuthStore((s) => s.currentOrganization?.id)
 
   return useMutation({
     mutationFn: api.markAsRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId] })
-      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId, organizationId] })
+      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId, organizationId] })
     },
   })
 }
@@ -72,8 +73,8 @@ export function useMarkAllAsRead() {
       return api.markAllAsRead(userId, organizationId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId] })
-      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId, organizationId] })
+      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId, organizationId] })
     },
   })
 }
@@ -81,12 +82,13 @@ export function useMarkAllAsRead() {
 export function useDeleteNotification() {
   const queryClient = useQueryClient()
   const userId = useAuthStore((s) => s.user?.id)
+  const organizationId = useAuthStore((s) => s.currentOrganization?.id)
 
   return useMutation({
     mutationFn: api.deleteNotification,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId] })
-      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId, organizationId] })
+      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId, organizationId] })
     },
   })
 }
@@ -102,8 +104,8 @@ export function useClearReadNotifications() {
       return api.clearReadNotifications(userId, organizationId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId] })
-      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, userId, organizationId] })
+      queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY, userId, organizationId] })
     },
   })
 }

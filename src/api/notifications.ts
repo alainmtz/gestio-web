@@ -77,15 +77,15 @@ export async function getUnreadCount(
   userId: string,
   organizationId: string
 ): Promise<number> {
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from('notifications')
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('organization_id', organizationId)
     .eq('read', false)
 
   if (error) throw error
-  return data?.length ?? 0
+  return count ?? 0
 }
 
 export async function getNotification(notificationId: string): Promise<Notification> {
