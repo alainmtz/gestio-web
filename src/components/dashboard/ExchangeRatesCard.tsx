@@ -16,7 +16,7 @@ async function fetchExchangeRatesSummary(organizationId: string): Promise<RateIn
   const { data: currencies } = await supabase
     .from('currencies')
     .select('id, code')
-    .in('code', codes)
+    .in('code', ['CUP', ...codes])
 
   if (!currencies?.length) return []
 

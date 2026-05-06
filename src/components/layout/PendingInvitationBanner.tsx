@@ -18,7 +18,7 @@ export function PendingInvitationBanner() {
     queryFn: async () => {
       const { data } = await supabase
         .from('organization_members')
-        .select('*, organization:organizations(name), inviter:profiles!organization_members_invited_by_fkey(full_name)')
+        .select('*, organization:organizations(name)')
         .eq('user_id', userId)
         .eq('is_active', false)
       return data || []
@@ -35,21 +35,9 @@ export function PendingInvitationBanner() {
           <div className="flex items-start gap-3">
             <Mail className="h-5 w-5 text-amber-600 mt-0.5" />
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-8 w-8 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center">
-                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
-                    {member.inviter?.full_name?.[0]?.toUpperCase() || '?'}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-medium text-amber-800 dark:text-amber-200">
-                    {member.inviter?.full_name || 'Alguien'} te invita a <strong>{member.organization?.name}</strong>
-                  </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Rol: {member.role === 'owner' ? 'Propietario' : member.role === 'admin' ? 'Administrador' : 'Miembro'}
-                  </p>
-                </div>
-              </div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                Te han invitado a <strong>{member.organization?.name}</strong>
+              </p>
               <div className="flex items-center gap-2 mt-2">
                 <Button
                   size="sm"
