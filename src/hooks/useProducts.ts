@@ -30,10 +30,11 @@ export function useProduct(id: string) {
 export function useCreateProduct() {
   const queryClient = useQueryClient()
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const userId = useAuthStore((state) => state.user?.id)
 
   return useMutation({
     mutationFn: (input: productsApi.CreateProductInput) =>
-      productsApi.createProduct(organizationId!, input),
+      productsApi.createProduct(organizationId!, userId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
     },

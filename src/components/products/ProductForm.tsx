@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -10,6 +10,12 @@ import type { Product, CreateProductInput } from '@/api/products'
 import { useCategories } from '@/hooks/useProducts'
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 import { supabase } from '@/lib/supabase'
+import { Plus, Trash2 } from 'lucide-react'
+
+interface StockEntry {
+  store_id: string
+  quantity: number
+}
 
 interface ProductFormProps {
   open: boolean
@@ -23,6 +29,16 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
   const { data: categories } = useCategories()
   const isEditing = !!product
   const defaultCurrencyId = useDefaultCurrency()
+  const [stockEntries, setStockEntries] = useState<StockEntry[]>([])
+
+  const { data: stores } = useQuery({
+    queryKey: ['stores-for-stock'],
+    queryFn: async () => {
+      const { data } = await supabase.from('stores').select('id, name').eq('is_active', true)
+      return data || []
+    },
+    enabled: open && !isEditing,
+  })
 
   const { data: currencies } = useQuery({
     queryKey: ['currencies'],
@@ -73,11 +89,27 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
         barcode: '',
         has_variants: false,
       })
+      setStockEntries([])
     }
   }, [product, reset, defaultCurrencyId])
 
+  const addStockEntry = () => {
+    setStockEntries([...stockEntries, { store_id: '', quantity: 0 }])
+  }
+
+  const updateStockEntry = (index: number, field: keyof StockEntry, value: string | number) => {
+    const updated = [...stockEntries]
+    updated[index] = { ...updated[index], [field]: value }
+    setStockEntries(updated)
+  }
+
+  const removeStockEntry = (index: number) => {
+    setStockEntries(stockEntries.filter((_, i) => i !== index))
+  }
+
   const onFormSubmit = (data: CreateProductInput) => {
-    onSubmit(data)
+    const validEntries = stockEntries.filter(e => e.store_id && e.quantity > 0)
+    onSubmit({ ...data, initial_stock: validEntries.length > 0 ? validEntries : undefined })
   }
 
   return (
@@ -192,6 +224,47 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
                 </SelectContent>
               </Select>
             </div>
+
+            {!isEditing && (
+              <>
+                <div className="col-span-2 border-t pt-4 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Stock Inicial (opcional)</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addStockEntry}>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Agregar tienda
+                    </Button>
+                  </div>
+                  {stockEntries.map((entry, index) => (
+                    <div key={index} className="flex gap-2 items-start mb-2">
+                      <Select
+                        value={entry.store_id}
+                        onValueChange={(v) => updateStockEntry(index, 'store_id', v)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Tienda" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(stores ?? []).map((s) => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        className="w-24"
+                        placeholder="Cant"
+                        value={entry.quantity || ''}
+                        onChange={(e) => updateStockEntry(index, 'quantity', parseFloat(e.target.value) || 0)}
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStockEntry(index)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>

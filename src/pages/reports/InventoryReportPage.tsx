@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Boxes, Download, AlertTriangle, Package } from 'lucide-react'
+import { Boxes, Download, AlertTriangle } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -29,7 +29,31 @@ import {
 import { useToast } from '@/lib/toast'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
+
+interface InventoryRow {
+  id: string
+  organization_id: string
+  product_id: string
+  variant_id: string | null
+  store_id: string
+  quantity: number
+  reserved_quantity: number
+  min_quantity: number
+  max_quantity: number | null
+  product: { name: string; sku: string; cost: string; price: string; category_id: string | null; category: { name: string } | null } | null
+  variant: { sku: string; name: string } | null
+  store: { name: string } | null
+}
+
+interface ProductSummary {
+  name: string
+  sku: string
+  cost: number
+  totalQuantity: number
+  totalReserved: number
+  stores: { name: string; quantity: number; reserved: number; min_quantity: number }[]
+}
 
 export function InventoryReportPage() {
   const [storeId, setStoreId] = useState<string>('_all')
@@ -53,11 +77,11 @@ export function InventoryReportPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['inventoryReport', organizationId, storeId],
     queryFn: async () => {
-      if (!organizationId) return { inventory: [], lowStock: [], categories: [] }
+      if (!organizationId) return { inventory: [], productSummaries: [], lowStock: [], categories: [], totalUnits: 0, totalValue: 0, lowStockCount: 0 }
 
       let query = supabase
         .from('inventory')
-        .select('*, product:products(name, sku, category_id, category:product_categories(name)), store:stores(name)')
+        .select('*, product:products(name, sku, category_id, category:product_categories(name), cost, price), variant:product_variants(name, sku), store:stores(name)')
         .eq('organization_id', organizationId)
 
       if (storeId && storeId !== '_all') {
@@ -66,27 +90,65 @@ export function InventoryReportPage() {
 
       const { data: inventory } = await query
 
-      const lowStock = inventory?.filter(
-        (inv) => inv.quantity <= 5
-      ) || []
+      if (!inventory || inventory.length === 0) {
+        return { inventory: [], productSummaries: [], lowStock: [], categories: [], totalUnits: 0, totalValue: 0, lowStockCount: 0 }
+      }
+
+      const rows = inventory as InventoryRow[]
+
+      const lowStock = rows.filter(
+        (inv) => inv.quantity <= inv.min_quantity
+      )
 
       const byCategory: Record<string, number> = {}
-      inventory?.forEach((inv) => {
+      rows.forEach((inv) => {
         const cat = inv.product?.category?.name || 'Sin categoría'
         byCategory[cat] = (byCategory[cat] || 0) + inv.quantity
       })
+      const categories = Object.entries(byCategory).map(([name, value]) => ({ name, value }))
 
-      const categories = Object.entries(byCategory).map(([name, value]) => ({
-        name,
-        value,
-      }))
+      const totalUnits = rows.reduce((acc, inv) => acc + inv.quantity, 0)
 
-      const totalValue = inventory?.reduce(
-        (acc, inv) => acc + (inv.quantity * parseFloat(inv.product?.cost || '0')),
+      const totalValue = rows.reduce(
+        (acc, inv) => acc + (inv.quantity * (parseFloat(inv.product?.cost || '0'))),
         0
-      ) || 0
+      )
 
-      return { inventory: inventory || [], lowStock, categories, totalValue, totalItems: inventory?.length || 0 }
+      const productMap = new Map<string, ProductSummary>()
+      rows.forEach((inv) => {
+        const pid = inv.product_id
+        if (!productMap.has(pid)) {
+          productMap.set(pid, {
+            name: inv.product?.name || 'Desconocido',
+            sku: inv.product?.sku || '-',
+            cost: parseFloat(inv.product?.cost || '0'),
+            totalQuantity: 0,
+            totalReserved: 0,
+            stores: [],
+          })
+        }
+        const summary = productMap.get(pid)!
+        summary.totalQuantity += inv.quantity
+        summary.totalReserved += inv.reserved_quantity
+        summary.stores.push({
+          name: inv.store?.name || 'Sin tienda',
+          quantity: inv.quantity,
+          reserved: inv.reserved_quantity,
+          min_quantity: inv.min_quantity,
+        })
+      })
+      const productSummaries = Array.from(productMap.values())
+        .sort((a, b) => b.totalQuantity - a.totalQuantity)
+
+      return {
+        inventory: rows,
+        productSummaries,
+        lowStock,
+        categories,
+        totalUnits,
+        totalValue,
+        lowStockCount: lowStock.length,
+      }
     },
     enabled: !!organizationId,
   })
@@ -98,13 +160,15 @@ export function InventoryReportPage() {
     }
 
     const csv = [
-      ['Producto', 'SKU', 'Tienda', 'Cantidad', 'Reservado'],
-      ...data.inventory.map((inv: any) => [
+      ['Producto', 'SKU', 'Variante', 'Tienda', 'Cantidad', 'Reservado', 'Disponible'],
+      ...data.inventory.map((inv: InventoryRow) => [
         inv.product?.name || '',
         inv.product?.sku || '',
+        inv.variant?.name || '',
         inv.store?.name || '',
         inv.quantity,
         inv.reserved_quantity,
+        inv.quantity - inv.reserved_quantity,
       ]),
     ]
       .map((row) => row.join(','))
@@ -165,15 +229,15 @@ export function InventoryReportPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Items</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Unidades Totales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.totalItems || 0}</div>
+            <div className="text-2xl font-bold">{data?.totalUnits || 0}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Valor Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Valor Total (costo)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -187,7 +251,7 @@ export function InventoryReportPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {data?.lowStock?.length || 0}
+              {data?.lowStockCount || 0}
             </div>
           </CardContent>
         </Card>
@@ -199,20 +263,25 @@ export function InventoryReportPage() {
             <CardTitle>Inventario por Producto</CardTitle>
           </CardHeader>
           <CardContent>
-            {data?.inventory?.length ? (
+            {data?.productSummaries?.length ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.inventory.slice(0, 10)}>
+                <BarChart data={data.productSummaries.slice(0, 10)}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
-                    dataKey={(inv: any) => inv.product?.name?.slice(0, 15)}
+                    dataKey={(p: ProductSummary) => p.name.slice(0, 15)}
                     tick={{ fontSize: 10 }}
                   />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8 }}
-                    formatter={(value: number) => [value, 'Cantidad']}
+                    formatter={(value: number, _name: string, props: any) => [
+                      value,
+                      props.payload.totalReserved > 0
+                        ? `Stock: ${props.payload.totalQuantity} (reservado: ${props.payload.totalReserved})`
+                        : `Stock: ${value}`,
+                    ]}
                   />
-                  <Bar dataKey="quantity" fill="#0088FE" name="Stock" />
+                  <Bar dataKey="totalQuantity" fill="#0088FE" name="Stock total" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -225,7 +294,7 @@ export function InventoryReportPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Distribución por Producto</CardTitle>
+            <CardTitle>Distribución por Categoría</CardTitle>
           </CardHeader>
           <CardContent>
             {data?.categories?.length ? (
@@ -257,12 +326,12 @@ export function InventoryReportPage() {
         </Card>
       </div>
 
-      {(data?.lowStock?.length ?? 0) > 0 && (
+      {data?.lowStock?.length ? (
         <Card className="border-amber-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-600">
               <AlertTriangle className="h-5 w-5" />
-              Productos con Stock Bajo
+              Productos con Stock Bajo ({data.lowStock.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -273,25 +342,45 @@ export function InventoryReportPage() {
                     <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
                     <th className="px-4 py-2 text-left text-sm font-medium">SKU</th>
                     <th className="px-4 py-2 text-left text-sm font-medium">Tienda</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium">Disponible</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Actual</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Mínimo</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Diferencia</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {data?.lowStock?.slice(0, 10).map((inv: any) => (
+                  {data.lowStock.slice(0, 10).map((inv) => (
                     <tr key={inv.id} className="hover:bg-muted/50">
-                      <td className="px-4 py-2">{inv.product?.name || '-'}</td>
+                      <td className="px-4 py-2">
+                        <div>
+                          {inv.product?.name || '-'}
+                          {inv.variant?.name && (
+                            <span className="text-xs text-muted-foreground ml-1">({inv.variant.name})</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-2 text-muted-foreground">
-                        {inv.product?.sku || '-'}
+                        {inv.variant?.sku || inv.product?.sku || '-'}
                       </td>
                       <td className="px-4 py-2">{inv.store?.name || '-'}</td>
                       <td className="px-4 py-2 font-medium text-amber-600">
                         {inv.quantity}
+                      </td>
+                      <td className="px-4 py-2">{inv.min_quantity}</td>
+                      <td className="px-4 py-2 font-medium text-red-600">
+                        {(inv.quantity - inv.min_quantity).toFixed(0)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-green-500">
+          <CardContent className="py-8 text-center text-green-600">
+            <Boxes className="h-8 w-8 mx-auto mb-2" />
+            <p className="font-medium">Todo el inventario está por encima del mínimo</p>
           </CardContent>
         </Card>
       )}

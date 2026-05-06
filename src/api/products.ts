@@ -40,6 +40,7 @@ export interface CreateProductInput {
   barcode?: string
   image_url?: string
   has_variants?: boolean
+  initial_stock?: { store_id: string; quantity: number }[]
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {
@@ -109,11 +110,13 @@ export async function getProduct(id: string): Promise<Product | null> {
   return data
 }
 
-export async function createProduct(organizationId: string, input: CreateProductInput, defaultCurrencyId?: string): Promise<Product> {
+export async function createProduct(organizationId: string, userId: string, input: CreateProductInput, defaultCurrencyId?: string): Promise<Product> {
+  const { initial_stock, ...productData } = input
+
   const { data, error } = await supabase
     .from('products')
     .insert({
-      ...input,
+      ...productData,
       organization_id: organizationId,
       category_id: input.category_id || null,
       price_currency_id: input.price_currency_id || defaultCurrencyId || '11111111-1111-1111-1111-111111111111',
@@ -122,6 +125,22 @@ export async function createProduct(organizationId: string, input: CreateProduct
     .single()
 
   if (error) throw error
+
+  if (initial_stock && initial_stock.length > 0) {
+    for (const stock of initial_stock) {
+      if (stock.quantity > 0) {
+        await createMovement(organizationId, userId, {
+          product_id: data.id,
+          store_id: stock.store_id,
+          movement_type: 'OPENING',
+          quantity: stock.quantity,
+          cost: input.cost || undefined,
+          notes: 'Stock inicial',
+        })
+      }
+    }
+  }
+
   return data
 }
 

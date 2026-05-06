@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Trash2, Plus } from 'lucide-react'
 import { productSchema, type ProductFormData } from '@/schemas'
 import { getProduct, createProduct, updateProduct, deleteProduct, getCategories, type Product } from '@/api/products'
 import { useAuthStore } from '@/stores/authStore'
@@ -23,6 +23,7 @@ interface InventoryData {
   store_id: string
   quantity: number
   reserved_quantity: number
+  min_quantity: number
 }
 
 export function ProductDetailPage() {
@@ -32,6 +33,7 @@ export function ProductDetailPage() {
   const { toast } = useToast()
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
 
+  const userId = useAuthStore((state) => state.user?.id)
   const currentStoreId = useAuthStore((state) => state.currentStore?.id)
   const { hasPermission } = usePermissions()
   const defaultCurrencyId = useDefaultCurrency()
@@ -82,7 +84,7 @@ export function ProductDetailPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: ProductFormData) => createProduct(organizationId!, data),
+    mutationFn: (data: ProductFormData) => createProduct(organizationId!, userId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast({ title: 'Producto creado', description: 'El producto se ha creado correctamente', variant: 'default' })
@@ -292,35 +294,51 @@ export function ProductDetailPage() {
         </Card>
       </div>
 
-      {!isNew && inventoryData && inventoryData.length > 0 && (
+      {!isNew && (
         <Card>
           <CardHeader>
-            <CardTitle>Stock por Tienda</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Stock por Tienda</CardTitle>
+              <Link to={`/inventory/movements?productId=${id}&action=opening`}>
+                <Button type="button" size="sm" variant="outline">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Agregar Stock
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium">Tienda</th>
-                    <th className="px-4 py-2 text-right text-sm font-medium">Disponible</th>
-                    <th className="px-4 py-2 text-right text-sm font-medium">Reservado</th>
-                  </tr>
-                </thead>
+            {inventoryData && inventoryData.length > 0 ? (
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Tienda</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">Disponible</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">Reservado</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">Mínimo</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y">
-                  {inventoryData.map((inv) => {
-                    const store = stores?.find(s => s.id === inv.store_id)
-                    return (
-                      <tr key={inv.store_id}>
-                        <td className="px-4 py-2">{store?.name || inv.store_id}</td>
-                        <td className="px-4 py-2 text-right">{inv.quantity}</td>
-                        <td className="px-4 py-2 text-right">{inv.reserved_quantity}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    {inventoryData.map((inv) => {
+                      const store = stores?.find(s => s.id === inv.store_id)
+                      return (
+                        <tr key={inv.store_id}>
+                          <td className="px-4 py-2">{store?.name || inv.store_id}</td>
+                          <td className="px-4 py-2 text-right">{inv.quantity}</td>
+                          <td className="px-4 py-2 text-right">{inv.reserved_quantity}</td>
+                          <td className="px-4 py-2 text-right">{inv.min_quantity}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center py-8 text-muted-foreground">
+                Sin stock registrado. Usa el botón "Agregar Stock" para añadir inventario inicial.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
