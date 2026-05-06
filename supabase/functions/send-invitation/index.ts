@@ -115,14 +115,20 @@ Deno.serve(async (req: Request) => {
         </div>
       `
 
-      await sendEmail({
-        to: email,
-        subject: `${inviterName} te invita a unirte a ${org.name}`,
-        html: emailHtml,
-      })
+      let emailSent = false
+      try {
+        await sendEmail({
+          to: email,
+          subject: `${inviterName} te invita a unirte a ${org.name}`,
+          html: emailHtml,
+        })
+        emailSent = true
+      } catch (e) {
+        console.error('Email send failed:', e)
+      }
 
       return new Response(
-        JSON.stringify({ success: true, user_exists: true, message: 'Invitation sent to registered user' }),
+        JSON.stringify({ success: true, user_exists: true, email_sent: emailSent }),
         { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       )
     } else {
@@ -162,14 +168,20 @@ Deno.serve(async (req: Request) => {
         </div>
       `
 
-      await sendEmail({
-        to: email,
-        subject: `${inviterName} te invita a unirte a ${org.name}`,
-        html: emailHtml,
-      })
+      let emailSent = false
+      try {
+        await sendEmail({
+          to: email,
+          subject: `${inviterName} te invita a unirte a ${org.name}`,
+          html: emailHtml,
+        })
+        emailSent = true
+      } catch (e) {
+        console.error('Email send failed:', e)
+      }
 
       return new Response(
-        JSON.stringify({ success: true, user_exists: false, invitation_id: invitation.id }),
+        JSON.stringify({ success: true, user_exists: false, invitation_id: invitation.id, email_sent: emailSent }),
         { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       )
     }
