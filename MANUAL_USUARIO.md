@@ -90,24 +90,43 @@ El Dashboard es la primera pantalla tras iniciar sesión. Muestra un resumen del
 **Ver productos:**
 1. Ve a **Inventario → Productos** en la barra lateral.
 2. Usa la barra de búsqueda para encontrar un producto por nombre o SKU.
-3. Usa los filtros por categoría o estado.
+3. Usa los filtros por categoría.
 4. Haz clic en un producto para ver sus detalles.
+5. Cada tarjeta de producto muestra en su footer la **moneda del precio** y el **stock total** across todas las tiendas.
 
 **Crear un producto:**
 1. Haz clic en **Nuevo Producto**.
 2. Completa los campos:
    - **Nombre** (obligatorio)
-   - **SKU** (opcional, código interno)
+   - **SKU** (obligatorio, código interno)
+   - **Código de barras** (opcional)
    - **Categoría** (selecciona o crea una nueva)
-   - **Precio** y **Costo**
-   - **Stock mínimo** y **Stock máximo** (para alertas)
-   - **¿Tiene variantes?** (tallas, colores, etc.)
-3. Haz clic en **Guardar**.
+   - **Precio de venta** y **Costo**
+   - **Moneda del precio** — cada producto define su precio en una moneda específica (CUP, USD, EUR, MLC, USDT, etc.). Por defecto usa la moneda de la tienda activa.
+   - **Tasa de impuesto** (%)
+   - **Descripción**
+3. **Stock inicial** (opcional): al crear el producto puedes añadir directamente el stock en una o más tiendas:
+   - Haz clic en **Agregar tienda**.
+   - Selecciona la tienda y escribe la cantidad.
+   - Puedes añadir stock en múltiples tiendas a la vez.
+   - El sistema registrará automáticamente movimientos de tipo **Apertura** para cada entrada.
+4. Haz clic en **Crear**.
 
-**Editar un producto:**
-1. Haz clic en el producto en la lista.
-2. Modifica los campos necesarios.
-3. Guarda los cambios.
+> Si no defines stock inicial, el producto se crea sin inventario. Puedes añadirlo después desde su ficha de detalle con el botón **Agregar Stock** o desde **Inventario → Movimientos**.
+
+**Importar productos desde CSV:**
+1. Haz clic en **Importar CSV**.
+2. Descarga la plantilla de ejemplo para ver el formato.
+3. Completa tu archivo — la columna `price_currency_code` permite definir la moneda de cada producto usando su código ISO (CUP, USD, EUR, USDT, etc.).
+4. Sube el archivo y revisa la vista previa antes de confirmar.
+
+**Ficha del producto:**
+1. Haz clic en un producto en la lista o ve a **Nuevo Producto** para crear uno nuevo.
+2. La ficha incluye:
+   - **Información general**: nombre, SKU, código de barras, categoría, descripción.
+   - **Precios y Stock**: precio de venta, moneda, costo, tasa de impuesto.
+   - **Stock por Tienda**: tabla mostrando cantidad disponible, reservada y mínimo por cada tienda. Si el producto no tiene stock aún, verás un botón **Agregar Stock** que te lleva a registrar un movimiento de apertura.
+3. Puedes editar y guardar los cambios. Eliminar un producto lo marca como inactivo (no se borra permanentemente).
 
 **Variantes:**
 1. En la vista de detalle del producto, ve a la pestaña **Variantes**.
@@ -155,12 +174,27 @@ Para mover stock de una tienda a otra:
 
 > La transferencia genera automáticamente un movimiento de salida en la tienda origen y uno de entrada en la destino.
 
-### 3.5 Alertas de Stock Bajo
+### 3.5 Reporte de Inventario
 
-Cuando un producto alcanza o baja de su stock mínimo:
+El reporte muestra el estado actual del inventario con las siguientes métricas:
+
+- **Unidades Totales**: suma real de cantidades de stock (no solo conteo de registros).
+- **Valor Total (costo)**: valor del inventario basado en el costo de cada producto.
+- **Stock Bajo**: productos cuyo stock está por debajo del mínimo definido (`min_quantity`) para esa tienda.
+
+**Gráficos:**
+- **Inventario por Producto**: barras con el stock total de los 10 productos con más unidades (agregado across todas las tiendas).
+- **Distribución por Categoría**: gráfico circular mostrando la proporción de stock por categoría.
+
+**Exportar CSV:** Incluye columnas de producto, SKU, variante, tienda, cantidad, reservado y disponible.
+
+### 3.6 Alertas de Stock Bajo
+
+Cuando un producto alcanza o baja de su stock mínimo (`min_quantity`):
 
 - Aparece una notificación en el panel de notificaciones.
 - Se puede consultar la lista de alertas en **Inventario → Alertas**.
+- El reporte de inventario también muestra una tabla de productos con stock bajo, indicando la cantidad actual vs. el mínimo requerido.
 
 ---
 
@@ -277,11 +311,16 @@ La factura es el documento final de cobro.
 - **Pagada**: el total está cubierto.
 
 **Registrar un pago:**
-1. Abre la factura.
-2. Ve a la sección **Pagos**.
-3. Haz clic en **Registrar Pago**.
-4. Introduce: monto, método (efectivo, tarjeta, transferencia), referencia.
-5. Guarda.
+1. Abre la factura emitida.
+2. Haz clic en **Registrar Pago**.
+3. Introduce: **monto**, **método** (efectivo, tarjeta, transferencia), y referencia opcional.
+4. El sistema hereda automáticamente la moneda y tasa de cambio de la factura.
+5. Guarda. El estado de pago se actualizará a **Parcial** o **Pagada** según corresponda.
+
+> Puedes registrar múltiples pagos parciales hasta cubrir el total de la factura.
+
+**Descargar PDF:**
+- Una vez emitida, la factura tiene un botón **Descargar PDF** que genera un archivo imprimible usando la función de impresión del navegador.
 
 **Notas de crédito:**
 - Se crean para anular total o parcialmente una factura emitida.
@@ -289,7 +328,15 @@ La factura es el documento final de cobro.
 
 ### 6.4 Multi-moneda
 
-Todas las facturas pueden emitirse en cualquier moneda configurada (CUP, USD, EUR, MLC). La moneda se selecciona al crear el documento.
+Cada producto define su precio en una moneda específica. Al crear una oferta, prefactura o factura:
+
+1. La moneda del documento se selecciona al crearlo (por defecto, la moneda de la tienda activa).
+2. Los precios de los productos se **convierten automáticamente** a la moneda del documento usando las tasas de cambio vigentes.
+3. Puedes cambiar la moneda del documento en cualquier momento — los precios se reconvierten.
+4. Al convertir una oferta o prefactura a factura, puedes elegir una moneda diferente a la original — los precios se convierten en el proceso.
+5. Los **pagos** heredan la moneda y tasa de cambio de la factura padre.
+
+> El sistema usa el CUP como moneda pivote para todas las conversiones. Ejemplo: EUR → CUP → USD.
 
 ---
 
@@ -512,6 +559,9 @@ El ícono de campana en la barra superior muestra las notificaciones en tiempo r
 | **Stock bajo** | Un producto alcanza el stock mínimo |
 | **Tarea asignada** | Se te asigna una nueva tarea |
 | **Transferencia** | Stock transferido entre tiendas |
+| **Invitación pendiente** | Has sido invitado a una organización |
+| **Invitación aceptada** | Un usuario aceptó tu invitación |
+| **Cambio de horario** | Tu horario de trabajo fue modificado |
 
 ### 13.3 Detalle de Notificación
 
@@ -519,9 +569,10 @@ Al abrir una notificación, verás:
 
 - **Título** y fecha de creación.
 - **Tipo** con badge de color.
-- **Mensaje** descriptivo.
+- **Mensaje** descriptivo con contexto relevante.
 - Si es una **tasa de cambio**: verás la tasa anterior y la nueva con fechas, horas y diferencia.
 - Si es un **nuevo miembro**: verás el email del miembro, su rol y la fecha de ingreso.
+- Si es una **invitación**: verás el nombre de la organización, quién te invitó, tu rol asignado, y botones para **Aceptar** o **Rechazar** directamente desde el diálogo.
 - Estado **Leída / No leída**.
 
 ### 13.4 Marcar como Leída
@@ -533,20 +584,28 @@ Al abrir una notificación, verás:
 
 ## 14. Configuración
 
-### 14.1 Perfil
+La configuración se organiza en pestañas en la parte inferior de la pantalla, optimizada para uso en móvil y escritorio:
 
-1. Ve a **Configuración → Perfil**.
+| Pestaña | Contenido |
+|---|---|
+| 👤 Perfil | Datos personales, contraseña |
+| 🏢 Organización | Nombre, logo, datos fiscales |
+| 👥 Miembros | Invitaciones, gestión de equipo |
+| 🔑 Permisos | Roles y accesos |
+| 💱 Tasas | Tasas de cambio |
+
+### 14.1 Perfil
 2. Actualiza tu **nombre completo**, **teléfono** y **foto de perfil**.
 3. Cambia tu **contraseña** si es necesario.
 
 ### 14.2 Organización
 
-1. Ve a **Configuración → Organización**.
+Ve a la pestaña **Organización** en Configuración.
 2. Aquí puedes ver y editar el nombre, logo y datos fiscales de la organización.
 
 ### 14.3 Miembros del Equipo
 
-1. Ve a **Configuración → Miembros**.
+Ve a la pestaña **Miembros** en Configuración.
 2. Verás la lista de todos los miembros con su rol y estado.
 
 **Invitar un nuevo miembro:**
@@ -558,11 +617,11 @@ Al abrir una notificación, verás:
 **Gestionar miembros existentes:**
 - Cambiar rol (solo Owner puede cambiar roles de otros miembros).
 - Eliminar miembro de la organización.
-- Ver invitaciones pendientes y aceptar/rechazar desde el banner superior.
+- Ver invitaciones pendientes desde el panel de **Notificaciones** — puedes aceptar o rechazar directamente desde allí.
 
 ### 14.4 Permisos
 
-Los permisos se gestionan por rol. No se configuran individualmente por usuario.
+Los permisos se gestionan por rol. Ve a la pestaña **Permisos** en Configuración.
 
 - **Owner**: todos los permisos.
 - **Admin**: gestión completa excepto cambiar roles de miembros.
@@ -570,7 +629,7 @@ Los permisos se gestionan por rol. No se configuran individualmente por usuario.
 
 ### 14.5 Tasas de Cambio
 
-1. Ve a **Configuración → Tasas de Cambio**.
+Ve a la pestaña **Tasas** en Configuración.
 2. Aquí se gestionan las tasas de cambio entre monedas (CUP, USD, EUR, MLC).
 3. Las tasas tienen fecha de validez (desde/hasta).
 
@@ -614,6 +673,10 @@ Tu rol determina qué puedes hacer en el sistema:
 | **USD** | Dólar Estadounidense | $ |
 | **EUR** | Euro | € |
 | **MLC** | Moneda Libremente Convertible | MLC |
+| **USDT** | Tether USD (TRC20) | ₮ |
+| **BTC** | Bitcoin | ₿ |
+| **TRX** | TRON | TRX |
+| **BNB** | Binance Coin | BNB |
 
 ### 16.2 Cómo Funcionan las Tasas
 
@@ -624,7 +687,11 @@ Tu rol determina qué puedes hacer en el sistema:
 
 ### 16.3 Gráfico de Tasas
 
-En la sección de Tasas de Cambio hay un gráfico que muestra la evolución de las tasas en los **últimos 7 días**.
+En la sección de Tasas de Cambio hay un gráfico que muestra la evolución de las tasas en los **últimos 7 días**. El eje Y se ajusta automáticamente al rango de los datos para visualizar mejor las diferencias.
+
+### 16.4 Widget del Dashboard
+
+En el Dashboard verás una tarjeta con las tasas actuales de **EUR, USD y USDT** frente al CUP, incluyendo el porcentaje de cambio respecto a la tasa anterior.
 
 ---
 
@@ -658,6 +725,18 @@ Sí. Las notificaciones llegan instantáneamente gracias a la suscripción en ti
 
 Las facturas emitidas no se eliminan. Para corregir, crea una **nota de crédito** que anule parcial o totalmente la factura.
 
+### ¿Cómo añado stock a un producto que ya existe?
+
+Desde la ficha del producto, haz clic en **Agregar Stock**. Esto te llevará a registrar un movimiento de tipo **Apertura** o **Ajuste** según corresponda. También puedes ir a **Inventario → Movimientos → Nuevo Movimiento**.
+
+### ¿Los precios se convierten automáticamente entre monedas?
+
+Sí. Cada producto tiene su moneda de precio definida. Al añadir ese producto a una oferta, prefactura o factura en otra moneda, el precio se convierte usando las tasas de cambio vigentes. Puedes ver la moneda de cada producto en el footer de su tarjeta en la lista de productos.
+
+### ¿Puedo descargar una factura como PDF?
+
+Sí. Una vez emitida, la factura muestra un botón **Descargar PDF** que genera un archivo imprimible.
+
 ### ¿Mi invitación expiró, qué hago?
 
 Las invitaciones expiran a los 7 días. Solicita al Owner/Admin que te envíe una nueva invitación.
@@ -668,4 +747,4 @@ No. Gestio Web requiere conexión a internet para funcionar, ya que todos los da
 
 ---
 
-*Manual versión 1.0 — Mayo 2026*
+*Manual versión 1.1 — Mayo 2026*
