@@ -363,8 +363,10 @@ export function ExchangeRatesPage() {
                     }}
                   />
                   <YAxis
+                    domain={['auto', 'auto']}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickFormatter={(v: number) => v.toFixed(2)}
+                    allowDataOverflow={false}
                   />
                   <Tooltip
                     contentStyle={{

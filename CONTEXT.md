@@ -49,6 +49,7 @@ An item in inventory. Can have **variants** (e.g., size, color) and belongs to a
 - Stock is tracked per **store**, not globally.
 - Has **min_stock** and **max_stock** thresholds for low stock alerts.
 - **Attributes:** free-form key-value metadata on the product.
+- **Price currency:** each product defines its price in a specific currency (`price_currency_id`). Prices are converted to the document's currency at billing time using exchange rates.
 
 ### Inventory Movement
 
@@ -111,7 +112,7 @@ Automatic change tracking via Postgres triggers on all tables. Records `INSERT`,
 
 ## Currencies
 
-Four currencies supported:
+Supported currencies:
 
 | Code | Name | Symbol |
 |---|---|---|
@@ -119,8 +120,18 @@ Four currencies supported:
 | `USD` | Dólar Estadounidense | $ |
 | `EUR` | Euro | € |
 | `MLC` | Moneda Libremente Convertible | MLC |
+| `USDT` | Tether USD (TRC20) | ₮ |
+| `BTC` | Bitcoin | ₿ |
+| `TRX` | TRON | TRX |
+| `BNB` | Binance Coin | BNB |
 
-Exchange rates are organization-specific and time-bounded (`validFrom` / `validUntil`).
+Exchange rates are organization-specific and time-bounded (`validFrom` / `validUntil`). All conversions use CUP as the pivot currency. Products define their price currency via `price_currency_id`. During billing, prices are converted from the product's currency to the document's currency using the current exchange rate.
+
+**Price conversion flow:**
+1. Each product has a `price_currency_id` (defaults to the active store's currency).
+2. When adding items to a billing document, the product price is converted to the document's currency.
+3. When converting an offer/pre-invoice to an invoice, the user can change the target currency — item prices are reconverted.
+4. Payments inherit the currency and exchange rate from the parent invoice.
 
 ## Permissions
 

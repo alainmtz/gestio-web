@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,6 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Product, CreateProductInput } from '@/api/products'
 import { useCategories } from '@/hooks/useProducts'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
+import { supabase } from '@/lib/supabase'
 
 interface ProductFormProps {
   open: boolean
@@ -19,12 +22,22 @@ interface ProductFormProps {
 export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }: ProductFormProps) {
   const { data: categories } = useCategories()
   const isEditing = !!product
+  const defaultCurrencyId = useDefaultCurrency()
+
+  const { data: currencies } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const { data } = await supabase.from('currencies').select('*').eq('is_active', true).order('code')
+      return data || []
+    },
+  })
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateProductInput>({
     defaultValues: {
       name: '',
       sku: '',
       price: 0,
+      price_currency_id: defaultCurrencyId,
       cost: 0,
       tax_rate: 0,
       description: '',
@@ -40,6 +53,7 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
         name: product.name,
         sku: product.sku,
         price: product.price,
+        price_currency_id: product.price_currency_id || defaultCurrencyId,
         cost: product.cost,
         tax_rate: product.tax_rate,
         description: product.description || '',
@@ -52,6 +66,7 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
         name: '',
         sku: '',
         price: 0,
+        price_currency_id: defaultCurrencyId,
         cost: 0,
         tax_rate: 0,
         description: '',
@@ -59,7 +74,7 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
         has_variants: false,
       })
     }
-  }, [product, reset])
+  }, [product, reset, defaultCurrencyId])
 
   const onFormSubmit = (data: CreateProductInput) => {
     onSubmit(data)
@@ -114,6 +129,23 @@ export function ProductForm({ open, onOpenChange, product, onSubmit, isLoading }
                 placeholder="0.00"
               />
               {errors.price && <p className="text-sm text-destructive mt-1">{errors.price.message}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="price_currency_id">Moneda</Label>
+              <Select
+                value={watch('price_currency_id') || defaultCurrencyId}
+                onValueChange={(value) => setValue('price_currency_id', value)}
+              >
+                <SelectTrigger id="price_currency_id">
+                  <SelectValue placeholder="Moneda" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(currencies ?? []).map((cur) => (
+                    <SelectItem key={cur.id} value={cur.id}>{cur.code}{cur.symbol ? ` (${cur.symbol})` : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

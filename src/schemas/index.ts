@@ -6,6 +6,7 @@ export const productSchema = z.object({
   description: z.string().optional(),
   category_id: z.string().optional(),
   price: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0'),
+  price_currency_id: z.string().uuid().optional(),
   cost: z.coerce.number().min(0).optional(),
   tax_rate: z.coerce.number().min(0).max(100).optional(),
   barcode: z.string().optional(),

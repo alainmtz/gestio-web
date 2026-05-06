@@ -14,6 +14,7 @@ export type NotificationType =
   | 'info'
   | 'exchange_rate_change'
   | 'member_joined'
+  | 'organization_invitation'
 
 export interface Notification {
   id: string

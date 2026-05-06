@@ -13,6 +13,7 @@ import { Upload, Download, Loader2, CheckCircle2, XCircle, AlertCircle } from 'l
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 
 interface CsvRow {
   sku: string
@@ -21,6 +22,7 @@ interface CsvRow {
   category_name?: string
   cost?: string
   price: string
+  price_currency_code?: string
   tax_rate?: string
   barcode?: string
 }
@@ -30,6 +32,7 @@ interface ParsedRow extends CsvRow {
   _errors: string[]
   _valid: boolean
   _category_id?: string
+  _price_currency_id?: string
 }
 
 interface Props {
@@ -37,7 +40,7 @@ interface Props {
   onClose: () => void
 }
 
-const CSV_HEADERS = 'sku,name,description,category_name,cost,price,tax_rate,barcode'
+const CSV_HEADERS = 'sku,name,description,category_name,cost,price,price_currency_code,tax_rate,barcode'
 
 function triggerDownload(content: string, filename: string) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
@@ -117,11 +120,11 @@ export function ProductCsvImport({ open, onClose }: Props) {
   const queryClient = useQueryClient()
   const organizationId = useAuthStore((s) => s.currentOrganization?.id)
   const currentStore = useAuthStore((s) => s.currentStore)
+  const defaultCurrencyId = useDefaultCurrency()
 
   const handleDownloadTemplate = useCallback(async () => {
     setDownloadingTemplate(true)
     try {
-      // Fetch real categories from DB
       const { data: cats } = await supabase
         .from('product_categories')
         .select('name')
@@ -131,7 +134,12 @@ export function ProductCsvImport({ open, onClose }: Props) {
 
       const catNames = cats?.map((c) => c.name) ?? []
 
-      // Build template with category reference as commented header rows
+      let defaultCurrencyCode = 'CUP'
+      if (currentStore?.currencyId) {
+        const { data: cur } = await supabase.from('currencies').select('code').eq('id', currentStore.currencyId).single()
+        if (cur?.code) defaultCurrencyCode = cur.code
+      }
+
       const lines: string[] = []
       lines.push('# PLANTILLA DE IMPORTACIÓN DE PRODUCTOS - Gestio')
       lines.push('# Instrucciones:')
@@ -139,6 +147,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
       lines.push('#   - price es OBLIGATORIO (número mayor a 0)')
       lines.push('#   - cost y tax_rate son opcionales (default 0)')
       lines.push('#   - category_name debe coincidir EXACTAMENTE con una categoría existente')
+      lines.push(`#   - price_currency_code: código de moneda (CUP, USD, EUR, etc). Default: ${defaultCurrencyCode}`)
       lines.push('#   - barcode es opcional')
       lines.push('#')
       if (catNames.length > 0) {
@@ -149,11 +158,10 @@ export function ProductCsvImport({ open, onClose }: Props) {
       lines.push('#')
       lines.push(CSV_HEADERS)
 
-      // Add example rows using real category names if available
       const cat1 = catNames[0] ?? ''
       const cat2 = catNames[1] ?? catNames[0] ?? ''
-      lines.push(`PROD-001,Producto de ejemplo,Descripción opcional,${cat1},10.00,25.00,0,7890123456789`)
-      lines.push(`PROD-002,Otro producto,,${cat2},5.50,15.00,10,`)
+      lines.push(`PROD-001,Producto de ejemplo,Descripción opcional,${cat1},10.00,25.00,${defaultCurrencyCode},0,7890123456789`)
+      lines.push(`PROD-002,Otro producto,,${cat2},5.50,15.00,USD,10,`)
 
       triggerDownload(lines.join('\n'), 'plantilla_productos.csv')
       toast({ title: 'Plantilla descargada', description: catNames.length > 0 ? `Incluye ${catNames.length} categorías disponibles.` : 'No hay categorías — el campo category_name puede ir vacío.' })
@@ -162,7 +170,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
     } finally {
       setDownloadingTemplate(false)
     }
-  }, [organizationId, toast])
+  }, [organizationId, currentStore, toast])
 
   async function handleFile(file: File) {
     const text = await file.text()
@@ -175,6 +183,13 @@ export function ProductCsvImport({ open, onClose }: Props) {
       .eq('organization_id', organizationId)
     const catMap: Record<string, string> = {}
     cats?.forEach((c) => { catMap[c.name.toLowerCase()] = c.id })
+
+    // Fetch currencies for price_currency_code resolution
+    const { data: currencies } = await supabase
+      .from('currencies')
+      .select('id, code')
+    const currencyMap: Record<string, string> = {}
+    currencies?.forEach((c) => { currencyMap[c.code.toUpperCase()] = c.id })
 
     // Fetch existing SKUs for this org to detect duplicates
     const csvSkus = raw.map((r) => r.sku?.trim()).filter(Boolean)
@@ -221,12 +236,19 @@ export function ProductCsvImport({ open, onClose }: Props) {
         if (!categoryId) errors.push(`Categoría "${r.category_name}" no encontrada`)
       }
 
+      let priceCurrencyId: string | undefined
+      if (r.price_currency_code?.trim()) {
+        priceCurrencyId = currencyMap[r.price_currency_code.trim().toUpperCase()]
+        if (!priceCurrencyId) errors.push(`Moneda "${r.price_currency_code}" no encontrada`)
+      }
+
       return {
         ...r,
         _line: i + 2,
         _errors: errors,
         _valid: errors.length === 0,
         _category_id: categoryId,
+        _price_currency_id: priceCurrencyId,
       }
     })
 
@@ -251,6 +273,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
         category_id: row._category_id ?? null,
         cost: parseFloat(row.cost ?? '0') || 0,
         price: parseFloat(row.price),
+        price_currency_id: row._price_currency_id ?? defaultCurrencyId,
         tax_rate: parseFloat(row.tax_rate ?? '0') || 0,
         barcode: row.barcode?.trim() || null,
         is_active: true,
@@ -303,7 +326,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
                 <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
                 <p className="font-medium">Arrastra un archivo CSV o haz clic para seleccionar</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Columnas: sku, name, description, category_name, cost, price, tax_rate, barcode
+                  Columnas: sku, name, description, category_name, cost, price, price_currency_code, tax_rate, barcode
                 </p>
               </div>
               <input
@@ -356,6 +379,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
                       <th className="px-3 py-2 text-left">Categoría</th>
                       <th className="px-3 py-2 text-right">Costo</th>
                       <th className="px-3 py-2 text-right">Precio</th>
+                      <th className="px-3 py-2 text-left">Moneda</th>
                       <th className="px-3 py-2 text-left">Estado</th>
                     </tr>
                   </thead>
@@ -368,6 +392,7 @@ export function ProductCsvImport({ open, onClose }: Props) {
                         <td className="px-3 py-2 text-muted-foreground">{row.category_name || '—'}</td>
                         <td className="px-3 py-2 text-right">{row.cost || '0'}</td>
                         <td className="px-3 py-2 text-right">{row.price}</td>
+                        <td className="px-3 py-2 font-mono text-xs">{row.price_currency_code || 'CUP'}</td>
                         <td className="px-3 py-2">
                           {row._valid ? (
                             <CheckCircle2 className="h-4 w-4 text-green-600" />

@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ArrowLeft, Save, Loader2, Trash2, Plus, FileCheck, Search, Package, Check, X, FileText } from 'lucide-react'
 import { offerSchema, type OfferFormData } from '@/schemas'
-import { getOffer, createOffer, convertOfferToInvoice, convertOfferToPreInvoice, rejectOffer } from '@/api/billing'
+import { getOffer, createOffer, convertOfferToInvoice, convertOfferToPreInvoice, rejectOffer, convertPrice } from '@/api/billing'
 import { getCustomers } from '@/api/customers'
 import { getProducts } from '@/api/products'
 import { useStores } from '@/hooks/useStores'
@@ -25,12 +25,14 @@ import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { useUpdateOffer } from '@/hooks/useBilling'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 
 interface Product {
   id: string
   name: string
   sku: string
   price: number
+  price_currency_id?: string
   tax_rate: number
   store_id?: string | null
   stock?: number
@@ -44,6 +46,7 @@ export function OfferDetailPage() {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const userId = useAuthStore((state) => state.user?.id)
   const { hasPermission } = usePermissions()
+  const defaultCurrencyId = useDefaultCurrency()
   const currentStore = useAuthStore((state) => state.currentStore)
 
   const isNew = !id || id === 'new'
@@ -110,7 +113,7 @@ export function OfferDetailPage() {
   const updateMutation = useUpdateOffer()
 
   const convertToInvoiceMutation = useMutation({
-    mutationFn: () => convertOfferToInvoice(id!, organizationId!, userId!),
+    mutationFn: () => convertOfferToInvoice(id!, organizationId!, userId!, getValues().currency_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['offers'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
@@ -123,7 +126,7 @@ export function OfferDetailPage() {
   })
 
   const convertToPreInvoiceMutation = useMutation({
-    mutationFn: () => convertOfferToPreInvoice(id!, organizationId!, userId!),
+    mutationFn: () => convertOfferToPreInvoice(id!, organizationId!, userId!, getValues().currency_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['offers'] })
       queryClient.invalidateQueries({ queryKey: ['preInvoices'] })
@@ -146,7 +149,7 @@ export function OfferDetailPage() {
     },
   })
 
-  const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting } } = useForm<OfferFormData>({
+  const { register, handleSubmit, control, setValue, watch, reset, getValues, formState: { errors, isSubmitting } } = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
     defaultValues: {
       store_id: currentStore?.id || '',
@@ -168,9 +171,9 @@ export function OfferDetailPage() {
   useEffect(() => {
     if (offer) {
       reset({
-        store_id: offer.store_id,
+        store_id: offer.store_id || '',
         customer_id: offer.customer_id || '',
-        currency_id: offer.currency_id || 'CUP',
+        currency_id: offer.currency_id || defaultCurrencyId,
         notes: offer.notes || '',
         valid_until: offer.valid_until ? offer.valid_until.split('T')[0] : '',
         items: offer.items?.map(item => ({
@@ -185,7 +188,7 @@ export function OfferDetailPage() {
         })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
-  }, [offer, reset])
+  }, [offer, reset, defaultCurrencyId])
 
   const onSubmit = async (data: OfferFormData) => {
     if (isNew) {
@@ -205,13 +208,20 @@ export function OfferDetailPage() {
     }
   }
 
-  const addProduct = (product: Product, index: number) => {
+  const addProduct = async (product: Product, index: number) => {
     const stock = inventoryData?.find(inv => inv.product_id === product.id)?.quantity || 0
-    
+    const offerCurrencyId = watch('currency_id')
+    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+
+    let unitPrice = product.price
+    if (offerCurrencyId && offerCurrencyId !== productCurrencyId) {
+      unitPrice = await convertPrice(organizationId!, product.price, productCurrencyId, offerCurrencyId)
+    }
+
     setValue(`items.${index}.product_id`, product.id)
     setValue(`items.${index}.description`, product.name)
     setValue(`items.${index}.sku`, product.sku)
-    setValue(`items.${index}.unit_price`, product.price)
+    setValue(`items.${index}.unit_price`, Math.round(unitPrice * 100) / 100)
     setValue(`items.${index}.tax_rate`, product.tax_rate || 0)
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
@@ -227,7 +237,13 @@ export function OfferDetailPage() {
       toast({ title: 'Error', description: 'La oferta no tiene items', variant: 'destructive' })
       return
     }
-    await convertToInvoiceMutation.mutateAsync()
+    const currentData = getValues()
+    try {
+      await updateMutation.mutateAsync({ offerId: id!, input: currentData })
+      await convertToInvoiceMutation.mutateAsync()
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
   }
 
   const handleConvertToPreInvoice = async () => {
@@ -235,7 +251,13 @@ export function OfferDetailPage() {
       toast({ title: 'Error', description: 'La oferta no tiene items', variant: 'destructive' })
       return
     }
-    await convertToPreInvoiceMutation.mutateAsync()
+    const currentData = getValues()
+    try {
+      await updateMutation.mutateAsync({ offerId: id!, input: currentData })
+      await convertToPreInvoiceMutation.mutateAsync()
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
   }
 
   const handleReject = async () => {

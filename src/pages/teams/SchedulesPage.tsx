@@ -174,21 +174,24 @@ export function SchedulesPage() {
       toast({ title: 'Trabajo creado', description: 'El trabajo se ha programado correctamente' })
       resetForm()
 
+      const team = (teams || []).find((t: any) => t.id === teamId)
       const teamMembers = queryClient.getQueryData<any[]>(['team_members', teamId])
       if (teamMembers?.length) {
         try {
+          const teamInfo = team?.name ? ` (${team.name})` : ''
+          const customer = (customers || []).find((c: any) => c.id === customerId)
+          const customerInfo = customer?.name ? ` · ${customer.name}` : ''
+          const startFormatted = new Date(startDateTime).toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
           await createNotifications(teamMembers.map((m: any) => ({
             user_id: m.user_id,
             organization_id: organizationId!,
             type: 'task_assigned' as const,
             title: 'Nuevo trabajo asignado',
-            message: `${title} - ${new Date(startDateTime).toLocaleString('es-ES')}`,
+            message: `${title}${teamInfo}${customerInfo} — ${startFormatted}`,
             href: '/teams/schedules',
-            metadata: { schedule_id: schedule.id, team_id: teamId },
+            metadata: { schedule_id: schedule.id, team_id: teamId, team_name: team?.name, customer_name: customer?.name },
           })))
-        } catch {
-          // Notification failure is non-critical for schedule creation
-        }
+        } catch {}
       }
     },
     onError: (error: Error) => {
@@ -225,20 +228,20 @@ export function SchedulesPage() {
       const schedule = (queryClient.getQueryData<any[]>(['work_schedules']) || []).find((s: any) => s.id === id)
       if (schedule && userId) {
         const statusLabels: Record<string, string> = { CONFIRMED: 'confirmado', COMPLETED: 'completado', CANCELLED: 'cancelado' }
-        const notificationType = 'status_change' as const
+        const label = statusLabels[status] || status
+        const teamName = schedule.team?.name ? ` (${schedule.team.name})` : ''
+        const customerName = schedule.customer?.name ? ` · ${schedule.customer.name}` : ''
         try {
           await createNotifications([{
             user_id: userId,
             organization_id: organizationId!,
-            type: notificationType,
-            title: `Trabajo ${statusLabels[status] || status}`,
-            message: `${schedule.title} - Estado: ${statusLabels[status] || status}`,
+            type: 'status_change' as const,
+            title: `Trabajo ${label}`,
+            message: `${schedule.title}${teamName}${customerName} — Estado: ${label}`,
             href: '/teams/schedules',
-            metadata: { schedule_id: id, new_status: status },
+            metadata: { schedule_id: id, new_status: status, team_name: schedule.team?.name, customer_name: schedule.customer?.name },
           }])
-        } catch {
-          // Notification failure is non-critical for status updates
-        }
+        } catch {}
       }
     },
     onError: (error: Error) => {

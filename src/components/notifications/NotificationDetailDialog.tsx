@@ -1,11 +1,16 @@
 import { NOTIFICATION_TYPE_CONFIG } from '@/config/notifications'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/lib/toast'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Notification } from '@/api/notifications'
-import { ArrowDown, ArrowUp, Minus, User } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, User, Check, X, Loader2, Building2, Package, FileText, DollarSign, Calendar, TrendingDown, ArrowLeftRight, ClipboardList } from 'lucide-react'
+import { useState } from 'react'
 
 interface NotificationDetailDialogProps {
   notification: Notification | null
@@ -46,6 +51,190 @@ function MemberJoinedDetails({ metadata }: { metadata: Record<string, unknown> }
           <p>Se unió: {formatDateTime(joinedAt)}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+function MetadataCard({ icon: Icon, label, rows, iconColor, iconBg }: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  rows: { label: string; value: string }[]
+  iconColor: string
+  iconBg: string
+}) {
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', iconBg)}>
+          <Icon className={cn('h-5 w-5', iconColor)} />
+        </div>
+        <div className="flex-1 min-w-0 space-y-0.5">
+          {rows.filter(r => r.value).map((r) => (
+            <div key={r.label} className="flex justify-between text-sm">
+              <span className="text-xs text-muted-foreground">{r.label}</span>
+              <span className="font-medium truncate ml-2">{r.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Propietario',
+  admin: 'Administrador',
+  member: 'Miembro',
+}
+
+function OrganizationInvitationDetails({ notification }: { notification: Notification }) {
+  const { toast } = useToast()
+  const [processing, setProcessing] = useState(false)
+
+  const role = notification.metadata?.member_role as string | undefined
+  const inviterName = notification.metadata?.inviter_name as string | undefined
+  const orgId = notification.organization_id
+  const roleLabel = role ? (ROLE_LABELS[role] ?? role) : 'Miembro'
+
+  const handleAccept = async () => {
+    setProcessing(true)
+    try {
+      const { data: pendingMembers } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', notification.user_id)
+        .eq('organization_id', orgId)
+        .eq('is_active', false)
+
+      if (pendingMembers?.length) {
+        const { error } = await supabase
+          .from('organization_members')
+          .update({ is_active: true })
+          .eq('id', pendingMembers[0].id)
+        if (error) throw error
+      }
+
+      const userId = useAuthStore.getState().user?.id
+      if (userId) {
+        const { data: owners } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', orgId)
+          .neq('user_id', userId)
+
+        if (owners && owners.length > 0) {
+          const memberEmail = useAuthStore.getState().user?.email ?? ''
+          await supabase
+            .from('notifications')
+            .insert(
+              owners.map((o) => ({
+                user_id: o.user_id,
+                organization_id: orgId,
+                type: 'member_joined',
+                title: 'Nuevo miembro',
+                message: `${memberEmail} se ha unido a la organización.`,
+                href: '/settings/members',
+                metadata: {
+                  member_email: memberEmail,
+                  member_role: role,
+                  joined_at: new Date().toISOString(),
+                },
+              }))
+            )
+        }
+      }
+
+      toast({ title: 'Invitación aceptada', description: `Ahora eres miembro de la organización` })
+      await supabase
+        .from('notifications')
+        .update({ read: true, read_at: new Date().toISOString() })
+        .eq('id', notification.id)
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'No se pudo aceptar la invitación',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleReject = async () => {
+    setProcessing(true)
+    try {
+      const { data: pendingMembers } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', notification.user_id)
+        .eq('organization_id', orgId)
+        .eq('is_active', false)
+
+      if (pendingMembers?.length) {
+        const { error } = await supabase
+          .from('organization_members')
+          .delete()
+          .eq('id', pendingMembers[0].id)
+        if (error) throw error
+      }
+
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notification.id)
+
+      toast({ title: 'Invitación rechazada' })
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'No se pudo rechazar la invitación',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        Detalle de la invitación
+      </p>
+
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+          <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate">{notification.title}</p>
+          {inviterName && <p className="text-xs text-muted-foreground">Invitado por: {inviterName}</p>}
+          <p className="text-xs text-muted-foreground">Rol: {roleLabel}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="default"
+          disabled={processing}
+          onClick={handleAccept}
+          className="flex-1"
+        >
+          {processing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Check className="mr-1 h-3 w-3" />}
+          Aceptar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={processing}
+          onClick={handleReject}
+          className="flex-1"
+        >
+          <X className="mr-1 h-3 w-3" />
+          Rechazar
+        </Button>
+      </div>
     </div>
   )
 }
@@ -203,7 +392,106 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
             <MemberJoinedDetails metadata={notification.metadata} />
           )}
 
-          {notification.metadata && !hasRateMetadata && Object.keys(notification.metadata).length > 0 && (
+          {notification.type === 'organization_invitation' && (
+            <OrganizationInvitationDetails notification={notification} />
+          )}
+
+          {notification.type === 'low_stock' && (
+            <MetadataCard
+              icon={TrendingDown}
+              label="Alerta de stock"
+              iconColor="text-orange-600 dark:text-orange-400"
+              iconBg="bg-orange-100 dark:bg-orange-900/40"
+              rows={[
+                { label: 'Producto', value: (notification.metadata?.product_name as string) ?? '' },
+                { label: 'Tienda', value: (notification.metadata?.store_name as string) ?? '' },
+                { label: 'Disponible', value: notification.metadata?.available != null ? `${notification.metadata.available} uds` : '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'new_invoice' && (
+            <MetadataCard
+              icon={FileText}
+              label="Detalle de factura"
+              iconColor="text-blue-600 dark:text-blue-400"
+              iconBg="bg-blue-100 dark:bg-blue-900/40"
+              rows={[
+                { label: 'Cliente', value: (notification.metadata?.customer_name as string) ?? '' },
+                { label: 'Total', value: notification.metadata?.total != null ? `$${Number(notification.metadata.total).toFixed(2)}` : '' },
+                { label: 'Estado', value: (notification.metadata?.status as string) ?? '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'payment' && (
+            <MetadataCard
+              icon={DollarSign}
+              label="Detalle de pago"
+              iconColor="text-green-600 dark:text-green-400"
+              iconBg="bg-green-100 dark:bg-green-900/40"
+              rows={[
+                { label: 'Cliente', value: (notification.metadata?.customer_name as string) ?? '' },
+                { label: 'Monto', value: notification.metadata?.total != null ? `$${Number(notification.metadata.total).toFixed(2)}` : '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'consignment' && (
+            <MetadataCard
+              icon={ClipboardList}
+              label="Detalle de consignación"
+              iconColor="text-amber-600 dark:text-amber-400"
+              iconBg="bg-amber-100 dark:bg-amber-900/40"
+              rows={[
+                { label: 'Socio', value: (notification.metadata?.partner_name as string) ?? '' },
+                { label: 'Productos', value: notification.metadata?.total_items != null ? `${notification.metadata.total_items}` : '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'new_order' && (
+            <MetadataCard
+              icon={Package}
+              label="Detalle de oferta"
+              iconColor="text-purple-600 dark:text-purple-400"
+              iconBg="bg-purple-100 dark:bg-purple-900/40"
+              rows={[
+                { label: 'Cliente', value: (notification.metadata?.customer_name as string) ?? '' },
+                { label: 'Total', value: notification.metadata?.total != null ? `$${Number(notification.metadata.total).toFixed(2)}` : '' },
+                { label: 'Estado', value: (notification.metadata?.status as string) ?? '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'task_assigned' && (
+            <MetadataCard
+              icon={Calendar}
+              label="Trabajo asignado"
+              iconColor="text-blue-600 dark:text-blue-400"
+              iconBg="bg-blue-100 dark:bg-blue-900/40"
+              rows={[
+                { label: 'Equipo', value: (notification.metadata?.team_name as string) ?? '' },
+                { label: 'Cliente', value: (notification.metadata?.customer_name as string) ?? '' },
+              ]}
+            />
+          )}
+
+          {notification.type === 'status_change' && (
+            <MetadataCard
+              icon={ArrowLeftRight}
+              label="Cambio de estado"
+              iconColor="text-amber-600 dark:text-amber-400"
+              iconBg="bg-amber-100 dark:bg-amber-900/40"
+              rows={[
+                { label: 'Equipo', value: (notification.metadata?.team_name as string) ?? '' },
+                { label: 'Cliente', value: (notification.metadata?.customer_name as string) ?? '' },
+                { label: 'Nuevo estado', value: (notification.metadata?.new_status as string) ?? '' },
+              ]}
+            />
+          )}
+
+          {notification.metadata && !hasRateMetadata && notification.type !== 'organization_invitation' && notification.type !== 'member_joined' && notification.type !== 'low_stock' && notification.type !== 'new_invoice' && notification.type !== 'payment' && notification.type !== 'consignment' && notification.type !== 'new_order' && notification.type !== 'task_assigned' && notification.type !== 'status_change' && Object.keys(notification.metadata).length > 0 && (
             <div className="rounded-lg border bg-muted/50 p-4">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Metadatos</p>
               <dl className="grid grid-cols-2 gap-2 text-sm">

@@ -1,4 +1,4 @@
-import { Calendar, ArrowLeftRight, TrendingDown, Package, CreditCard, FileText, DollarSign, ClipboardList, Info, Users, LucideIcon } from 'lucide-react'
+import { Calendar, ArrowLeftRight, TrendingDown, Package, CreditCard, FileText, DollarSign, ClipboardList, Info, Users, LucideIcon, Mail } from 'lucide-react'
 import type { NotificationType } from '@/api/notifications'
 
 export interface NotificationTypeConfig {
@@ -22,4 +22,5 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
   info:          { icon: Info,           color: 'text-gray-600 dark:text-gray-400',   bg: 'bg-gray-100 dark:bg-gray-800/40',      label: 'Info' },
   exchange_rate_change: { icon: ArrowLeftRight, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/40', label: 'Tasa de cambio' },
   member_joined: { icon: Users, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-100 dark:bg-violet-900/40', label: 'Nuevo miembro' },
+  organization_invitation: { icon: Mail, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/40', label: 'Invitación' },
 }

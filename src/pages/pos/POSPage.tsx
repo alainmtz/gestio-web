@@ -13,12 +13,15 @@ import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { createMovement } from '@/api/products'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
+import { convertPrice } from '@/api/billing'
 
 interface Product {
   id: string
   name: string
   sku: string
   price: number
+  price_currency_id?: string
   cost?: number
   category?: { name: string }
 }
@@ -87,18 +90,11 @@ export function POSPage() {
   const [showHeldOrders, setShowHeldOrders] = useState(false)
   const [heldOrders, setHeldOrders] = useState<HeldOrder[]>(getHeldOrders)
 
+  const defaultCurrencyId = useDefaultCurrency()
+
   const { data: activeCurrency } = useQuery({
-    queryKey: ['defaultCurrency'],
-    queryFn: async () => {
-      // currencies is a global catalog (no organization_id / is_default columns)
-      // Default to CUP for POS invoices
-      const { data } = await supabase
-        .from('currencies')
-        .select('id')
-        .eq('code', 'CUP')
-        .maybeSingle()
-      return data?.id ?? null
-    },
+    queryKey: ['defaultCurrency', defaultCurrencyId],
+    queryFn: async () => defaultCurrencyId,
   })
 
   const { data: activeSession } = useQuery({
@@ -121,7 +117,7 @@ export function POSPage() {
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select('id, name, sku, price, category:product_categories(name)')
+        .select('id, name, sku, price, price_currency_id, category:product_categories(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .limit(50)
@@ -170,8 +166,29 @@ export function POSPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
-      const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-      
+      let convertedTotal = 0
+      const convertedItems = await Promise.all(cart.map(async (item) => {
+        const productCurrencyId = item.product.price_currency_id || defaultCurrencyId
+        let unitPrice = item.product.price
+        if (activeCurrency && activeCurrency !== productCurrencyId) {
+          unitPrice = await convertPrice(organizationId!, item.product.price, productCurrencyId, activeCurrency)
+        }
+        const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100
+        convertedTotal += lineTotal
+        return {
+          invoice_id: '',
+          product_id: item.product.id,
+          product_name: item.product.name,
+          sku: item.product.sku,
+          quantity: item.quantity,
+          unit_price: Math.round(unitPrice * 100) / 100,
+          tax_rate: 0,
+          tax_amount: 0,
+          discount_amount: 0,
+          total: lineTotal,
+        }
+      }))
+
       // Create invoice
       const year = new Date().getFullYear()
       const { count } = await supabase
@@ -190,11 +207,11 @@ export function POSPage() {
           number: documentNumber,
           status: 'confirmed',
           payment_status: 'paid',
-          subtotal: total,
+          subtotal: convertedTotal,
           tax_amount: 0,
           discount_amount: 0,
-          total: total,
-          paid_amount: total,
+          total: convertedTotal,
+          paid_amount: convertedTotal,
           currency_id: activeCurrency,
         })
         .select()
@@ -203,26 +220,20 @@ export function POSPage() {
       if (error) throw error
 
       // Create invoice items
-      const items = cart.map(item => ({
-        invoice_id: invoice.id,
-        product_id: item.product.id,
-        product_name: item.product.name,
-        sku: item.product.sku,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        tax_rate: 0,
-        tax_amount: 0,
-        discount_amount: 0,
-        total: item.product.price * item.quantity,
-      }))
+      const items = convertedItems.map(i => ({ ...i, invoice_id: invoice.id }))
 
       await supabase.from('invoice_items').insert(items)
 
       // Record payment
       await supabase.from('payments').insert({
         invoice_id: invoice.id,
-        amount: total,
+        organization_id: organizationId!,
+        amount: convertedTotal,
         payment_method: paymentMethod,
+        currency_id: invoice.currency_id,
+        exchange_rate: invoice.exchange_rate,
+        transaction_date: new Date().toISOString().split('T')[0],
+        created_by: userId,
       })
 
       // If cash payment, add to cash register
@@ -231,7 +242,7 @@ export function POSPage() {
           session_id: activeSession.id,
           type: 'sale',
           payment_method: 'cash',
-          amount: total,
+          amount: convertedTotal,
           user_id: userId,
         })
       }
@@ -332,7 +343,7 @@ export function POSPage() {
     toast({ title: 'Pedido eliminado', variant: 'destructive' })
   }
 
-  const cartTotal = useMemo(() => 
+  const cartTotal = useMemo(() =>
     cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   , [cart])
 

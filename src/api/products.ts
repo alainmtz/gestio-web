@@ -16,6 +16,7 @@ export interface Product {
   category?: ProductCategory
   cost: number
   price: number
+  price_currency_id: string
   tax_rate: number
   barcode?: string
   image_url?: string
@@ -34,6 +35,7 @@ export interface CreateProductInput {
   category_id?: string
   cost?: number
   price: number
+  price_currency_id?: string
   tax_rate?: number
   barcode?: string
   image_url?: string
@@ -107,12 +109,14 @@ export async function getProduct(id: string): Promise<Product | null> {
   return data
 }
 
-export async function createProduct(organizationId: string, input: CreateProductInput): Promise<Product> {
+export async function createProduct(organizationId: string, input: CreateProductInput, defaultCurrencyId?: string): Promise<Product> {
   const { data, error } = await supabase
     .from('products')
     .insert({
       ...input,
       organization_id: organizationId,
+      category_id: input.category_id || null,
+      price_currency_id: input.price_currency_id || defaultCurrencyId || '11111111-1111-1111-1111-111111111111',
     })
     .select('*, category:product_categories(name, id)')
     .single()
@@ -122,12 +126,18 @@ export async function createProduct(organizationId: string, input: CreateProduct
 }
 
 export async function updateProduct(id: string, input: UpdateProductInput): Promise<Product> {
+  const payload: Record<string, unknown> = {
+    ...input,
+    updated_at: new Date().toISOString(),
+    category_id: input.category_id || null,
+  }
+  if (input.price_currency_id) {
+    payload.price_currency_id = input.price_currency_id
+  }
+
   const { data, error } = await supabase
     .from('products')
-    .update({
-      ...input,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq('id', id)
     .select('*, category:product_categories(name, id)')
     .single()

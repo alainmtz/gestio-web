@@ -32,12 +32,21 @@ export function useRealtimeNotifications() {
         async (payload) => {
           const row = payload.new as { available: number; product_id: string; store_id?: string }
           if (row.available <= LOW_STOCK_THRESHOLD && row.available >= 0) {
-            addNotification({
-              type: 'low_stock',
-              title: 'Stock bajo',
-                  message: `Un producto tiene solo ${row.available} unidades disponibles.`,
-              href: '/inventory/products',
-            })
+            const { data: product } = await supabase
+              .from('products')
+              .select('name')
+              .eq('id', row.product_id)
+              .maybeSingle()
+
+            const { data: store } = row.store_id
+              ? await supabase.from('stores').select('name').eq('id', row.store_id).maybeSingle()
+              : { data: null }
+
+            const productName = product?.name || 'Producto'
+            const storeName = store?.name ? ` (${store.name})` : ''
+            const msg = `${productName}${storeName}: solo ${row.available} unidades disponibles.`
+
+            addNotification({ type: 'low_stock', title: 'Stock bajo', message: msg, href: '/inventory/products' })
 
             if (isAdmin) {
               try {
@@ -46,13 +55,11 @@ export function useRealtimeNotifications() {
                   organization_id: organizationId,
                   type: 'low_stock',
                   title: 'Stock bajo',
-              message: `Un producto tiene solo ${row.available} unidades disponibles.`,
+                  message: msg,
                   href: '/inventory/products',
-                  metadata: { product_id: row.product_id, store_id: row.store_id },
+                  metadata: { product_id: row.product_id, product_name: productName, store_id: row.store_id, store_name: store?.name, available: row.available },
                 }])
-              } catch {
-                // Notification creation is non-critical for low_stock alerts
-              }
+              } catch {}
             }
           }
         }
@@ -70,13 +77,16 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { id: string; number: string; total: number }
-          addNotification({
-            type: 'new_invoice',
-            title: 'Nueva factura creada',
-            message: `Factura #${row.number || row.id.slice(0, 8)} por $${row.total ?? 0}`,
-            href: `/billing/invoices/${row.id}`,
-          })
+          const row = payload.new as { id: string; number: string; total: number; customer_id?: string; status?: string }
+          const { data: customer } = row.customer_id
+            ? await supabase.from('customers').select('name').eq('id', row.customer_id).maybeSingle()
+            : { data: null }
+
+          const customerInfo = customer?.name ? ` para ${customer.name}` : ''
+          const statusLabel = row.status === 'draft' ? ' (Borrador)' : row.status === 'issued' ? ' (Emitida)' : ''
+          const msg = `Factura #${row.number || row.id.slice(0, 8)}${customerInfo} por $${row.total?.toFixed(2) ?? '0.00'}${statusLabel}`
+
+          addNotification({ type: 'new_invoice', title: 'Nueva factura creada', message: msg, href: `/billing/invoices/${row.id}` })
 
           if (isAdmin) {
             try {
@@ -85,13 +95,11 @@ export function useRealtimeNotifications() {
                 organization_id: organizationId,
                 type: 'new_invoice',
                 title: 'Nueva factura creada',
-                message: `Factura #${row.number || row.id.slice(0, 8)} por $${row.total ?? 0}`,
+                message: msg,
                 href: `/billing/invoices/${row.id}`,
-                metadata: { invoice_id: row.id },
+                metadata: { invoice_id: row.id, customer_name: customer?.name, total: row.total, status: row.status },
               }])
-            } catch {
-              // Notification creation is non-critical for invoice events
-            }
+            } catch {}
           }
         }
       )
@@ -104,15 +112,18 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const newRow = payload.new as { id: string; number: string; payment_status: string }
+          const newRow = payload.new as { id: string; number: string; payment_status: string; customer_id?: string; total?: number }
           const oldRow = payload.old as { payment_status: string }
           if (newRow.payment_status === 'paid' && oldRow.payment_status !== 'paid') {
-            addNotification({
-              type: 'payment',
-              title: 'Pago registrado',
-              message: `Factura #${newRow.number || newRow.id.slice(0, 8)} marcada como pagada.`,
-              href: `/billing/invoices/${newRow.id}`,
-            })
+            const { data: customer } = newRow.customer_id
+              ? await supabase.from('customers').select('name').eq('id', newRow.customer_id).maybeSingle()
+              : { data: null }
+
+            const customerInfo = customer?.name ? ` de ${customer.name}` : ''
+            const total = newRow.total ? `$${newRow.total.toFixed(2)}` : ''
+            const msg = `Factura #${newRow.number || newRow.id.slice(0, 8)}${customerInfo} marcada como pagada${total ? ` (${total})` : ''}.`
+
+            addNotification({ type: 'payment', title: 'Pago registrado', message: msg, href: `/billing/invoices/${newRow.id}` })
 
             if (isAdmin) {
               try {
@@ -121,13 +132,11 @@ export function useRealtimeNotifications() {
                   organization_id: organizationId,
                   type: 'payment',
                   title: 'Pago registrado',
-                  message: `Factura #${newRow.number || newRow.id.slice(0, 8)} marcada como pagada.`,
+                  message: msg,
                   href: `/billing/invoices/${newRow.id}`,
-                  metadata: { invoice_id: newRow.id },
+                  metadata: { invoice_id: newRow.id, customer_name: customer?.name, total: newRow.total },
                 }])
-              } catch {
-                // Notification creation is non-critical for payment events
-              }
+              } catch {}
             }
           }
         }
@@ -145,13 +154,16 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { id: string; partner_id: string }
-          addNotification({
-            type: 'consignment',
-            title: 'Nueva consignación',
-            message: 'Se registró una nueva consignación.',
-            href: `/consignments/${row.id}`,
-          })
+          const row = payload.new as { id: string; partner_id: string; total_items?: number }
+          const { data: partner } = row.partner_id
+            ? await supabase.from('customers').select('name').eq('id', row.partner_id).maybeSingle()
+            : { data: null }
+
+          const partnerInfo = partner?.name ? ` con ${partner.name}` : ''
+          const itemsInfo = row.total_items ? ` (${row.total_items} productos)` : ''
+          const msg = `Nueva consignación${partnerInfo}${itemsInfo}.`
+
+          addNotification({ type: 'consignment', title: 'Nueva consignación', message: msg, href: `/consignments/${row.id}` })
 
           if (isAdmin) {
             try {
@@ -160,13 +172,11 @@ export function useRealtimeNotifications() {
                 organization_id: organizationId,
                 type: 'consignment',
                 title: 'Nueva consignación',
-                message: 'Se registró una nueva consignación.',
+                message: msg,
                 href: `/consignments/${row.id}`,
-                metadata: { consignment_id: row.id },
+                metadata: { consignment_id: row.id, partner_name: partner?.name, total_items: row.total_items },
               }])
-            } catch {
-              // Notification creation is non-critical for consignment events
-            }
+            } catch {}
           }
         }
       )
@@ -183,13 +193,17 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
-          const row = payload.new as { id: string; number?: string }
-          addNotification({
-            type: 'new_order',
-            title: 'Nueva oferta',
-            message: `Oferta #${row.number || row.id.slice(0, 8)} creada.`,
-            href: `/billing/offers/${row.id}`,
-          })
+          const row = payload.new as { id: string; number?: string; customer_id?: string; total?: number; status?: string }
+          const { data: customer } = row.customer_id
+            ? await supabase.from('customers').select('name').eq('id', row.customer_id).maybeSingle()
+            : { data: null }
+
+          const customerInfo = customer?.name ? ` para ${customer.name}` : ''
+          const totalInfo = row.total ? ` por $${row.total.toFixed(2)}` : ''
+          const statusLabel = row.status === 'draft' ? ' (Borrador)' : row.status === 'sent' ? ' (Enviada)' : ''
+          const msg = `Oferta #${row.number || row.id.slice(0, 8)}${customerInfo}${totalInfo}${statusLabel}.`
+
+          addNotification({ type: 'new_order', title: 'Nueva oferta', message: msg, href: `/billing/offers/${row.id}` })
 
           if (isAdmin) {
             try {
@@ -198,13 +212,11 @@ export function useRealtimeNotifications() {
                 organization_id: organizationId,
                 type: 'new_order',
                 title: 'Nueva oferta',
-                message: `Oferta #${row.number || row.id.slice(0, 8)} creada.`,
+                message: msg,
                 href: `/billing/offers/${row.id}`,
-                metadata: { offer_id: row.id },
+                metadata: { offer_id: row.id, customer_name: customer?.name, total: row.total, status: row.status },
               }])
-            } catch {
-              // Notification creation is non-critical for offer events
-            }
+            } catch {}
           }
         }
       )
@@ -225,7 +237,6 @@ export function useRealtimeNotifications() {
           const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
           const eventType = payload.eventType
 
-          const currencyId = row?.base_currency_id ?? oldRow?.base_currency_id ?? ''
           const { data: currencies } = await supabase
             .from('currencies')
             .select('id, code')
@@ -288,12 +299,7 @@ export function useRealtimeNotifications() {
             }
           }
 
-          addNotification({
-            type: 'exchange_rate_change',
-            title,
-            message,
-            href: '/settings/exchange',
-          })
+          addNotification({ type: 'exchange_rate_change', title, message, href: '/settings/exchange' })
 
           try {
             await createNotifications([{
@@ -305,9 +311,7 @@ export function useRealtimeNotifications() {
               href: '/settings/exchange',
               metadata,
             }])
-          } catch {
-            // Notification creation is non-critical for exchange rate events
-          }
+          } catch {}
         }
       )
       .subscribe()

@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { supabase } from '@/lib/supabase'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 
 interface InventoryData {
   product_id: string
@@ -33,6 +34,7 @@ export function ProductDetailPage() {
 
   const currentStoreId = useAuthStore((state) => state.currentStore?.id)
   const { hasPermission } = usePermissions()
+  const defaultCurrencyId = useDefaultCurrency()
 
   const isNew = !id || id === 'new'
   const [isDeleting, setIsDeleting] = useState(false)
@@ -60,6 +62,14 @@ export function ProductDetailPage() {
       return data as InventoryData[]
     },
     enabled: !isNew && !!id,
+  })
+
+  const { data: currencies } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const { data } = await supabase.from('currencies').select('*').eq('is_active', true).order('code')
+      return data || []
+    },
   })
 
   const { data: stores } = useQuery({
@@ -114,6 +124,7 @@ export function ProductDetailPage() {
       sku: '',
       description: '',
       price: 0,
+      price_currency_id: defaultCurrencyId,
       cost: 0,
       tax_rate: 0,
       barcode: '',
@@ -129,13 +140,14 @@ export function ProductDetailPage() {
         description: product.description || '',
         category_id: product.category_id || '',
         price: product.price,
+        price_currency_id: product.price_currency_id || defaultCurrencyId,
         cost: product.cost || 0,
         tax_rate: product.tax_rate || 0,
         barcode: product.barcode || '',
         has_variants: product.has_variants,
       })
     }
-  }, [product, reset])
+  }, [product, reset, defaultCurrencyId])
 
   const onSubmit = async (data: ProductFormData) => {
     if (isNew) {
@@ -248,11 +260,24 @@ export function ProductDetailPage() {
             <CardTitle>Precios y Stock</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="price">Precio de venta *</Label>
                 <Input id="price" type="number" step="0.01" {...register('price')} placeholder="0.00" />
                 {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price_currency_id">Moneda</Label>
+                <Select value={watch('price_currency_id') || defaultCurrencyId} onValueChange={(v) => setValue('price_currency_id', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar moneda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies?.map((cur) => (
+                      <SelectItem key={cur.id} value={cur.id}>{cur.code}{cur.symbol ? ` (${cur.symbol})` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cost">Costo</Label>

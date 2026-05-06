@@ -1,10 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Edit, Trash2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Product } from '@/api/products'
-import { PERMISSIONS } from '@/hooks/usePermissions'
-import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS, usePermissions } from '@/hooks/usePermissions'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
+import { supabase } from '@/lib/supabase'
 
 interface ProductCardProps {
   product: Product
@@ -15,6 +17,17 @@ interface ProductCardProps {
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const { hasPermission } = usePermissions()
   const hasStock = (product.totalStock ?? 0) > 0
+  const defaultCurrencyId = useDefaultCurrency()
+
+  const { data: currencies } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const { data } = await supabase.from('currencies').select('id, code, symbol').eq('is_active', true)
+      return data || []
+    },
+  })
+
+  const productCurrency = currencies?.find(c => c.id === (product.price_currency_id || defaultCurrencyId))
 
   return (
     <Card>
@@ -56,7 +69,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Precio</p>
-              <p className="text-sm font-medium">${product.price.toFixed(2)}</p>
+              <p className="text-sm font-medium">${product.price.toFixed(2)} <span className="text-xs text-muted-foreground font-normal">{productCurrency?.code}</span></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Costo</p>

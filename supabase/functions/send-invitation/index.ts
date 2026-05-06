@@ -94,6 +94,21 @@ Deno.serve(async (req: Request) => {
         throw memberError
       }
 
+      await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: existingProfile.id,
+          organization_id,
+          type: 'organization_invitation',
+          title: `Invitación a ${org.name}`,
+          message: `${inviterName} te ha invitado a unirte a ${org.name} como ${role === 'owner' ? 'Propietario' : role === 'admin' ? 'Administrador' : 'Miembro'}.`,
+          href: null,
+          metadata: {
+            member_role: role,
+            inviter_name: inviterName,
+          },
+        })
+
       const userExists = true
       const emailHtml = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">

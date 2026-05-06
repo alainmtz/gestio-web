@@ -150,6 +150,7 @@ interface Product {
   barcode?: string;
   description?: string;
   price: string;
+  priceCurrencyId?: string;
   cost?: string;
   minStock: number;
   maxStock: number;
@@ -378,7 +379,11 @@ interface InvoiceItem {
 interface InvoicePayment {
   id: string;
   invoiceId: string;
+  organizationId: string;
   amount: string;
+  currencyId?: string;
+  exchangeRate?: number;
+  transactionDate: string;
   paymentMethod: 'CASH' | 'CARD' | 'TRANSFER' | 'CHECK' | 'OTHER';
   reference?: string;
   notes?: string;

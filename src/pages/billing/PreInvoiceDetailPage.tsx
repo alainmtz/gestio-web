@@ -20,6 +20,7 @@ import {
   createPreInvoice,
   convertPreInvoiceToInvoice,
   rejectPreInvoice,
+  convertPrice,
 } from '@/api/billing'
 import { getCustomers } from '@/api/customers'
 import { getProducts } from '@/api/products'
@@ -35,12 +36,14 @@ import {
   useApprovePreInvoice,
   useSubmitPreInvoiceForApproval,
 } from '@/hooks/useBilling'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 
 interface Product {
   id: string
   name: string
   sku: string
   price: number
+  price_currency_id?: string
   tax_rate: number
 }
 
@@ -60,6 +63,7 @@ export function PreInvoiceDetailPage() {
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const userId = useAuthStore((state) => state.user?.id)
   const currentStore = useAuthStore((state) => state.currentStore)
+  const defaultCurrencyId = useDefaultCurrency()
 
   const isNew = id === 'new'
   const [isEditing, setIsEditing] = useState(false)
@@ -116,6 +120,7 @@ export function PreInvoiceDetailPage() {
     setValue,
     watch,
     reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PreInvoiceFormData>({
     resolver: zodResolver(preInvoiceSchema),
@@ -147,7 +152,7 @@ export function PreInvoiceDetailPage() {
   })
 
   const convertToInvoiceMutation = useMutation({
-    mutationFn: () => convertPreInvoiceToInvoice(id!, organizationId!, userId!),
+    mutationFn: () => convertPreInvoiceToInvoice(id!, organizationId!, userId!, getValues().currency_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['preInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
@@ -178,12 +183,20 @@ export function PreInvoiceDetailPage() {
   const getProductStock = (productId: string) =>
     inventoryData?.find((inv) => inv.product_id === productId)?.quantity || 0
 
-  const addProduct = (product: Product, index: number) => {
+  const addProduct = async (product: Product, index: number) => {
     const stock = getProductStock(product.id)
+    const preInvoiceCurrencyId = watch('currency_id')
+    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+
+    let unitPrice = product.price
+    if (preInvoiceCurrencyId && preInvoiceCurrencyId !== productCurrencyId) {
+      unitPrice = await convertPrice(organizationId!, product.price, productCurrencyId, preInvoiceCurrencyId)
+    }
+
     setValue(`items.${index}.product_id`, product.id)
     setValue(`items.${index}.description`, product.name)
     setValue(`items.${index}.sku`, product.sku)
-    setValue(`items.${index}.unit_price`, product.price)
+    setValue(`items.${index}.unit_price`, Math.round(unitPrice * 100) / 100)
     setValue(`items.${index}.tax_rate`, product.tax_rate || 0)
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
@@ -215,7 +228,13 @@ export function PreInvoiceDetailPage() {
       toast({ title: 'Error', description: 'La prefactura no tiene items', variant: 'destructive' })
       return
     }
-    await convertToInvoiceMutation.mutateAsync()
+    const currentData = getValues()
+    try {
+      await updateMutation.mutateAsync({ preInvoiceId: id!, input: currentData })
+      await convertToInvoiceMutation.mutateAsync()
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
   }
 
   const handleReject = async () => {
@@ -232,9 +251,9 @@ export function PreInvoiceDetailPage() {
   useEffect(() => {
     if (isEditing && preInvoice) {
       reset({
-        store_id: preInvoice.store_id,
+        store_id: preInvoice.store_id || '',
         customer_id: preInvoice.customer_id || '',
-        currency_id: preInvoice.currency_id || '',
+        currency_id: preInvoice.currency_id || defaultCurrencyId,
         notes: preInvoice.notes || '',
         items: preInvoice.items?.map((item) => ({
           product_id: item.product_id || '',
@@ -248,7 +267,7 @@ export function PreInvoiceDetailPage() {
         })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
-  }, [isEditing, preInvoice, reset])
+  }, [isEditing, preInvoice, reset, defaultCurrencyId])
 
   const handleSaveEdit = handleSubmit(async (data) => {
     await updateMutation.mutateAsync(

@@ -13,9 +13,9 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ArrowLeft, Save, Loader2, Plus, Trash2, DollarSign, Search, Package, Pencil, XCircle } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Plus, Trash2, DollarSign, Search, Package, Pencil, XCircle, Download } from 'lucide-react'
 import { invoiceSchema, type InvoiceFormData } from '@/schemas'
-import { getInvoice, addInvoicePayment } from '@/api/billing'
+import { getInvoice, addInvoicePayment, convertPrice } from '@/api/billing'
 import { getCustomers } from '@/api/customers'
 import { getProducts } from '@/api/products'
 import { useStores } from '@/hooks/useStores'
@@ -27,6 +27,7 @@ import { supabase } from '@/lib/supabase'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { useCreateInvoice, useUpdateInvoice, useCancelInvoice, useAddInvoicePayment } from '@/hooks/useBilling'
 import { cn } from '@/lib/utils'
+import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'success' | 'destructive' | 'outline' }> = {
   draft: { label: 'Borrador', variant: 'secondary' },
@@ -40,6 +41,7 @@ interface Product {
   name: string
   sku: string
   price: number
+  price_currency_id?: string
   tax_rate: number
 }
 
@@ -48,7 +50,9 @@ export function InvoiceDetailPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
+  const defaultCurrencyId = useDefaultCurrency()
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const organization = useAuthStore((state) => state.currentOrganization)
   const currentStore = useAuthStore((state) => state.currentStore)
 
   const isNew = !id || id === 'new'
@@ -60,6 +64,7 @@ export function InvoiceDetailPage() {
   const [productSearch, setProductSearch] = useState('')
   const [openProductPopover, setOpenProductPopover] = useState<number | null>(null)
   const popoverRef = useRef<HTMLButtonElement>(null)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const { data: storesData } = useStores()
   const { data: currenciesData } = useCurrencies()
@@ -127,9 +132,9 @@ export function InvoiceDetailPage() {
   useEffect(() => {
     if (invoice && (isNew || isEditing)) {
       reset({
-        store_id: invoice.store_id,
+        store_id: invoice.store_id || '',
         customer_id: invoice.customer_id || '',
-        currency_id: invoice.currency_id || '',
+        currency_id: invoice.currency_id || defaultCurrencyId,
         due_date: invoice.due_date ? invoice.due_date.split('T')[0] : '',
         notes: invoice.notes || '',
         items: invoice.items?.map(item => ({
@@ -144,17 +149,25 @@ export function InvoiceDetailPage() {
         })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
-  }, [invoice, isEditing, reset])
+  }, [invoice, isEditing, reset, defaultCurrencyId])
 
   const getProductStock = (productId: string) =>
     inventoryData?.find((inv) => inv.product_id === productId)?.quantity || 0
 
-  const addProduct = (product: Product, index: number) => {
+  const addProduct = async (product: Product, index: number) => {
     const stock = getProductStock(product.id)
+    const invoiceCurrencyId = watch('currency_id')
+    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+
+    let unitPrice = product.price
+    if (invoiceCurrencyId && invoiceCurrencyId !== productCurrencyId) {
+      unitPrice = await convertPrice(organizationId!, product.price, productCurrencyId, invoiceCurrencyId)
+    }
+
     setValue(`items.${index}.product_id`, product.id)
     setValue(`items.${index}.description`, product.name)
     setValue(`items.${index}.sku`, product.sku)
-    setValue(`items.${index}.unit_price`, product.price)
+    setValue(`items.${index}.unit_price`, Math.round(unitPrice * 100) / 100)
     setValue(`items.${index}.tax_rate`, product.tax_rate || 0)
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
@@ -251,6 +264,150 @@ export function InvoiceDetailPage() {
   const invoiceStatus = invoice ? (statusLabels[invoice.status] || { label: invoice.status, variant: 'secondary' as const }) : null
   const canEdit = isNew || (invoice?.status === 'draft')
   const editable = isNew || isEditing
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow || !invoice) return
+
+    const currencyCode = currenciesData?.find(c => c.id === invoice.currency_id)?.code || ''
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Factura ${invoice.number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1a1a1a; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #1a1a1a; }
+    .company-name { font-size: 28px; font-weight: 700; }
+    .invoice-title { text-align: right; }
+    .invoice-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .invoice-title .number { font-size: 16px; color: #666; }
+    .invoice-title .status { font-size: 14px; font-weight: 600; margin-top: 4px; }
+    .status-issued { color: #2563eb; }
+    .status-paid { color: #16a34a; }
+    .status-draft { color: #666; }
+    .status-cancelled { color: #dc2626; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .details-section h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .details-section p { font-size: 14px; margin-bottom: 4px; }
+    .details-section .label { color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th { text-align: left; padding: 12px 16px; background: #f5f5f5; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+    th:last-child, td:last-child { text-align: right; }
+    th:nth-child(2), td:nth-child(2) { text-align: right; }
+    th:nth-child(3), td:nth-child(3) { text-align: right; }
+    td { padding: 12px 16px; border-bottom: 1px solid #e5e5e5; font-size: 14px; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 32px; }
+    .totals-grid { width: 280px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+    .totals-row.total { border-top: 2px solid #1a1a1a; padding-top: 12px; font-size: 18px; font-weight: 700; }
+    .notes { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; }
+    .notes h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+    .notes p { font-size: 14px; color: #666; white-space: pre-wrap; }
+    .footer { margin-top: 48px; text-align: center; font-size: 12px; color: #999; }
+    @media print {
+      body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="company-name">${organization?.name || 'Mi Empresa'}</div>
+    </div>
+    <div class="invoice-title">
+      <h1>FACTURA</h1>
+      <div class="number">${invoice.number}</div>
+      <div class="status status-${invoice.status}">${statusLabels[invoice.status]?.label || invoice.status}</div>
+      <div style="font-size:14px;color:#666;margin-top:4px;">${new Date(invoice.created_at).toLocaleDateString('es-ES')}</div>
+    </div>
+  </div>
+
+  <div class="details-grid">
+    <div class="details-section">
+      <h3>Cliente</h3>
+      <p>${invoice.customer?.name || '—'}</p>
+      ${invoice.customer?.code ? `<p>Código: ${invoice.customer.code}</p>` : ''}
+    </div>
+    <div class="details-section">
+      <h3>Detalles de pago</h3>
+      <p><span class="label">Método:</span> ${(invoice as any).payment_method || '—'}</p>
+      ${invoice.due_date ? `<p><span class="label">Vencimiento:</span> ${new Date(invoice.due_date).toLocaleDateString('es-ES')}</p>` : ''}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Precio ${currencyCode}</th>
+        <th>Total ${currencyCode}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(invoice.items || []).map(item => `
+      <tr>
+        <td>${item.description}</td>
+        <td>${item.quantity}</td>
+        <td>$${item.unit_price.toFixed(2)}</td>
+        <td>$${item.total.toFixed(2)}</td>
+      </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-grid">
+      <div class="totals-row">
+        <span>Subtotal</span>
+        <span>$${invoice.subtotal.toFixed(2)}</span>
+      </div>
+      <div class="totals-row">
+        <span>Impuestos</span>
+        <span>$${invoice.tax_amount.toFixed(2)}</span>
+      </div>
+      ${invoice.discount_amount > 0 ? `
+      <div class="totals-row">
+        <span>Descuentos</span>
+        <span>-$${invoice.discount_amount.toFixed(2)}</span>
+      </div>
+      ` : ''}
+      <div class="totals-row total">
+        <span>Total</span>
+        <span>$${invoice.total.toFixed(2)}</span>
+      </div>
+      <div class="totals-row">
+        <span>Pagado</span>
+        <span>$${invoice.paid_amount.toFixed(2)}</span>
+      </div>
+      <div class="totals-row">
+        <span>Pendiente</span>
+        <span>$${remainingBalance.toFixed(2)}</span>
+      </div>
+    </div>
+  </div>
+
+  ${invoice.notes ? `
+  <div class="notes">
+    <h3>Notas</h3>
+    <p>${invoice.notes}</p>
+  </div>
+  ` : ''}
+
+  <div class="footer">
+    <p>${organization?.name || 'Mi Empresa'} — Factura ${invoice.number}</p>
+  </div>
+
+  <script>
+    window.onload = function() { window.print(); }
+  </script>
+</body>
+</html>`)
+    printWindow.document.close()
+  }
 
   // ── Product items form section (shared between new and edit mode) ──────────
   const renderItemsForm = () => (
@@ -474,6 +631,12 @@ export function InvoiceDetailPage() {
             <Button type="button" onClick={() => setShowPaymentDialog(true)}>
               <DollarSign className="mr-2 h-4 w-4" />
               Registrar Pago
+            </Button>
+          )}
+          {invoice?.status !== 'draft' && invoice?.status !== 'cancelled' && (
+            <Button type="button" variant="outline" onClick={handlePrint}>
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
             </Button>
           )}
           {(invoice?.status === 'draft' || invoice?.status === 'issued') && hasPermission(PERMISSIONS.INVOICE_CANCEL) && (
