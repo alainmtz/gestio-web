@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { useAuthStore } from '@/stores/authStore'
 import { AppRouter } from '@/router/AppRouter'
 import { AuthRouter } from '@/router/AuthRouter'
@@ -30,6 +31,7 @@ function App() {
           element={isAuthenticated ? <AppRouter /> : <Navigate to="/auth/login" replace />}
         />
       </Routes>
+      <Analytics />
     </ToastProvider>
   )
 }
