@@ -32,6 +32,7 @@ interface AuthState {
   user: User | null
   session: { accessToken: string; expiresAt: number } | null
   organizations: Organization[]
+  pendingOrganizations: Organization[]
   currentOrganization: Organization | null
   currentStore: Store | null
   stores: Store[]
@@ -44,6 +45,7 @@ interface AuthActions {
   setUser: (user: User | null) => void
   setSession: (session: { accessToken: string; expiresAt: number } | null) => void
   setOrganizations: (organizations: Organization[]) => void
+  setPendingOrganizations: (pendingOrganizations: Organization[]) => void
   selectOrganization: (org: Organization) => void
   setStores: (stores: Store[]) => void
   selectStore: (store: Store | null) => void
@@ -59,6 +61,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       user: null,
       session: null,
       organizations: [],
+      pendingOrganizations: [],
       currentOrganization: null,
       currentStore: null,
       stores: [],
@@ -69,6 +72,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setUser: (user) => set({ user }),
       setSession: (session) => set({ session }),
       setOrganizations: (organizations) => set({ organizations }),
+      setPendingOrganizations: (pendingOrganizations) => set({ pendingOrganizations }),
       selectOrganization: (org) => set({ currentOrganization: org }),
       setStores: (stores) => set({ stores }),
       selectStore: (store) => set({ currentStore: store }),
@@ -91,6 +95,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           user: null,
           session: null,
           organizations: [],
+          pendingOrganizations: [],
           currentOrganization: null,
           currentStore: null,
           stores: [],
@@ -107,6 +112,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user,
         session: state.session,
         organizations: state.organizations,
+        pendingOrganizations: state.pendingOrganizations,
         currentOrganization: state.currentOrganization,
         currentStore: state.currentStore,
         stores: state.stores,

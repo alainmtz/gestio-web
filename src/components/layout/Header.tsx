@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { ChevronDown, LogOut, Store, User, Building2, Settings, Users, Key, CreditCard, PanelLeft } from 'lucide-react'
+import { ChevronDown, LogOut, Store, User, Building2, Settings, Users, Key, CreditCard, PanelLeft, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel'
@@ -24,7 +24,9 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 
 function MobileOrgPopover() {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const { pendingOrganizations } = useAuthStore()
   const { currentOrganization, organizations, selectOrganization, currentStore, stores, selectStore } = useOrganization()
 
   const handleSelectStore = (store: AuthStore | null) => {
@@ -55,6 +57,22 @@ function MobileOrgPopover() {
                 {org.name}
               </button>
             ))}
+            {pendingOrganizations.length > 0 && (
+              <>
+                <div className="border-t my-1" />
+                {pendingOrganizations.map((org) => (
+                  <button
+                    key={org.id}
+                    onClick={() => { setOpen(false); navigate('/settings/members') }}
+                    className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent transition-colors truncate"
+                  >
+                    <Clock className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                    <span className="truncate">{org.name}</span>
+                    <span className="ml-auto text-xs text-amber-600 flex-shrink-0">Pendiente</span>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </div>
         <div className="p-3">
@@ -158,7 +176,7 @@ function MobileHeaderBar() {
 
 function DesktopHeaderBar() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, logout, pendingOrganizations } = useAuthStore()
   const {
     currentOrganization,
     organizations,
@@ -199,6 +217,23 @@ function DesktopHeaderBar() {
                 {org.name}
               </DropdownMenuItem>
             ))}
+            {pendingOrganizations.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-muted-foreground">Pendientes</DropdownMenuLabel>
+                {pendingOrganizations.map((org) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => navigate('/settings/members')}
+                    className="opacity-70"
+                  >
+                    <Clock className="mr-2 h-3 w-3 text-amber-500" />
+                    <span>{org.name}</span>
+                    <span className="ml-auto text-xs text-amber-600">Pendiente</span>
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

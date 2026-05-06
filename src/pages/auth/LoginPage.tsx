@@ -20,7 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { login, setLoading, isLoading } = useAuthStore()
+  const { login, setPendingOrganizations, setLoading, isLoading } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -58,23 +58,25 @@ export function LoginPage() {
         avatarUrl: profileData?.avatar_url || undefined,
       }
 
-      // Fetch organizations where user is member
+      // Fetch organizations where user is member (active + pending)
       const { data: memberships } = await supabase
         .from('organization_members')
-        .select('organization_id, role')
+        .select('organization_id, role, is_active')
         .eq('user_id', authData.user.id)
 
-      // Check for pending invitations if no active memberships
+      const activeMemberships = memberships?.filter(m => m.is_active) || []
+      const pendingMemberships = memberships?.filter(m => !m.is_active) || []
+
+      // If no memberships at all, check for pending invitations
       if (!memberships || memberships.length === 0) {
         const { data: pendingInvites } = await supabase
           .from('organization_invitations')
-          .select('invitation_token, organization_id, role')
+          .select('invitation_token, organization_id')
           .eq('email', authData.user.email?.toLowerCase())
           .is('accepted_at', null)
           .gt('expires_at', new Date().toISOString())
 
         if (pendingInvites && pendingInvites.length > 0) {
-          // Redirect to accept the first pending invitation
           navigate(`/accept-invitation/${pendingInvites[0].invitation_token}`)
           setLoading(false)
           return
@@ -83,16 +85,15 @@ export function LoginPage() {
         throw new Error('No perteneces a ninguna organización')
       }
 
-      user.role = memberships[0]?.role || 'MEMBER'
+      user.role = activeMemberships[0]?.role || pendingMemberships[0]?.role || 'MEMBER'
 
-      const orgIds = memberships.map(m => m.organization_id)
-      const { data: orgs } = await supabase
-        .from('organizations')
-        .select('*')
-        .in('id', orgIds)
-        .eq('is_active', true)
+      // Fetch active organizations
+      const activeOrgIds = activeMemberships.map(m => m.organization_id)
+      const { data: activeOrgs } = activeOrgIds.length > 0
+        ? await supabase.from('organizations').select('*').in('id', activeOrgIds).eq('is_active', true)
+        : { data: null }
 
-      const organizations: Organization[] = orgs?.map(org => ({
+      const organizations: Organization[] = activeOrgs?.map(org => ({
         id: org.id,
         name: org.name,
         slug: org.slug,
@@ -101,7 +102,24 @@ export function LoginPage() {
         logoUrl: org.logo_url || undefined,
       })) || []
 
-      if (organizations.length === 0) {
+      // Fetch pending organizations
+      const pendingOrgIds = pendingMemberships.map(m => m.organization_id)
+      const { data: pendingOrgs } = pendingOrgIds.length > 0
+        ? await supabase.from('organizations').select('*').in('id', pendingOrgIds)
+        : { data: null }
+
+      const pendingOrganizations: Organization[] = pendingOrgs?.map(org => ({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        taxId: org.tax_id || undefined,
+        plan: org.plan,
+        logoUrl: org.logo_url || undefined,
+      })) || []
+
+      setPendingOrganizations(pendingOrganizations)
+
+      if (organizations.length === 0 && pendingOrganizations.length === 0) {
         throw new Error('No tienes organizaciones activas')
       }
 
