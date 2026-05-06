@@ -164,7 +164,7 @@ export function OrganizationPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Organización</h1>
           <p className="text-muted-foreground">Configura los ajustes de tu organización</p>
@@ -253,7 +253,7 @@ export function OrganizationPage() {
 
       <div className="flex justify-end">
         {hasPermission(PERMISSIONS.SETTINGS_ORG) && (
-          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="w-full sm:w-auto">
             {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Save className="mr-2 h-4 w-4" />
             Guardar Cambios

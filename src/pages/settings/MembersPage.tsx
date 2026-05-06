@@ -209,7 +209,7 @@ export function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Miembros</h1>
           <p className="text-muted-foreground">Gestiona los miembros de tu organización</p>
@@ -237,9 +237,9 @@ export function MembersPage() {
           ) : members && members.length > 0 ? (
             <div className="space-y-4">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={member.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border rounded-lg">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <span className="text-sm font-medium">
                         {member.user?.full_name?.[0] || member.user?.email?.[0] || '?'}
                       </span>
@@ -249,7 +249,7 @@ export function MembersPage() {
                       <p className="text-sm text-muted-foreground">{member.user?.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 sm:ml-auto">
                     {getRoleBadge(member)}
                     {member.role !== 'owner' && member.user_id !== currentUserId && (
                       <>
@@ -438,7 +438,7 @@ export function MembersPage() {
           <CardContent>
             <div className="space-y-3">
               {pendingInvitations.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div key={inv.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
                   <div>
                     <p className="font-medium">{inv.email}</p>
                     <p className="text-xs text-muted-foreground">

@@ -689,7 +689,7 @@ export function PermissionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Permisos</h1>
           <p className="text-muted-foreground">Configura los permisos por rol de tu organización</p>
@@ -824,7 +824,7 @@ export function PermissionsPage() {
 
         {/* ── Tab: Custom roles ── */}
         <TabsContent value="custom" className="space-y-4 mt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               Roles creados por tu organización con permisos personalizados.
             </p>
@@ -953,7 +953,7 @@ export function PermissionsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="py-2 px-4">
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
                         {modPerms.map((perm) => (
                           <label
                             key={perm.key}

@@ -7,23 +7,22 @@ import {
   Users,
   Shield,
   DollarSign,
-  ChevronLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface NavItem {
   label: string
   path: string
-  icon: React.ReactNode
+  icon: React.FC<{ className?: string }>
   permission?: string
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Perfil', path: '/settings/profile', icon: <User className="h-4 w-4" /> },
-  { label: 'Organización', path: '/settings/organization', icon: <Building2 className="h-4 w-4" />, permission: PERMISSIONS.SETTINGS_ORG },
-  { label: 'Miembros', path: '/settings/members', icon: <Users className="h-4 w-4" />, permission: PERMISSIONS.MEMBER_INVITE },
-  { label: 'Permisos', path: '/settings/permissions', icon: <Shield className="h-4 w-4" />, permission: PERMISSIONS.ROLE_MANAGE },
-  { label: 'Tasas de Cambio', path: '/settings/exchange', icon: <DollarSign className="h-4 w-4" />, permission: PERMISSIONS.SETTINGS_EXCHANGE },
+  { label: 'Perfil', path: '/settings/profile', icon: User },
+  { label: 'Organización', path: '/settings/organization', icon: Building2, permission: PERMISSIONS.SETTINGS_ORG },
+  { label: 'Miembros', path: '/settings/members', icon: Users, permission: PERMISSIONS.MEMBER_INVITE },
+  { label: 'Permisos', path: '/settings/permissions', icon: Shield, permission: PERMISSIONS.ROLE_MANAGE },
+  { label: 'Tasas de Cambio', path: '/settings/exchange', icon: DollarSign, permission: PERMISSIONS.SETTINGS_EXCHANGE },
 ]
 
 export function SettingsLayout() {
@@ -35,38 +34,33 @@ export function SettingsLayout() {
   )
 
   return (
-    <div className="flex gap-6 min-h-full">
-      {/* Settings side-nav */}
-      <aside className="w-52 shrink-0">
-        <div className="mb-4">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ChevronLeft className="h-4 w-4" />
-            Volver
-          </Link>
-          <h2 className="mt-2 text-lg font-semibold">Configuración</h2>
-        </div>
-        <nav className="space-y-1">
-          {visibleItems.map((item) => {
-            const active = location.pathname === item.path
-            return (
-              <Link key={item.path} to={item.path}>
-                <Button
-                  variant={active ? 'secondary' : 'ghost'}
-                  className={cn('w-full justify-start gap-2', active && 'font-medium')}
-                >
-                  {item.icon}
-                  {item.label}
-                </Button>
-              </Link>
-            )
-          })}
-        </nav>
-      </aside>
-
-      {/* Page content */}
+    <div className="flex flex-col min-h-full pb-16">
       <div className="flex-1 min-w-0">
         <Outlet />
       </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-1 border-t bg-background px-2 h-16 md:left-64">
+        {visibleItems.map((item) => {
+          const active = location.pathname === item.path
+          const Icon = item.icon
+          return (
+            <Link key={item.path} to={item.path} className="flex-1 max-w-[72px]">
+              <Button
+                variant="ghost"
+                className={cn(
+                  'flex flex-col items-center gap-0.5 h-auto w-full py-1.5 px-1 rounded-none hover:bg-accent/50',
+                  active && 'text-primary'
+                )}
+                aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-[10px] leading-tight truncate">{item.label}</span>
+              </Button>
+            </Link>
+          )
+        })}
+      </nav>
     </div>
   )
 }

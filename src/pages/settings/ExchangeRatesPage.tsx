@@ -195,12 +195,12 @@ export function ExchangeRatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tasas de Cambio</h1>
           <p className="text-muted-foreground">Gestión de tasas de cambio por moneda</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {hasPermission(PERMISSIONS.SETTINGS_EXCHANGE) && (
             <Button
               variant="outline"
@@ -240,7 +240,7 @@ export function ExchangeRatesPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Moneda Base</Label>
                     <Select
@@ -278,7 +278,7 @@ export function ExchangeRatesPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Tasa</Label>
                     <Input
@@ -314,7 +314,7 @@ export function ExchangeRatesPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <Select value={baseCurrency || 'all'} onValueChange={(v) => setBaseCurrency(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Moneda Base" />
@@ -420,7 +420,7 @@ export function ExchangeRatesPage() {
           ) : filteredRates.length > 0 ? (
             <div className="divide-y">
               {filteredRates.map((rate) => (
-                <div key={rate.id} className="flex items-center justify-between py-4">
+                <div key={rate.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-4">
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="font-medium">
@@ -433,7 +433,7 @@ export function ExchangeRatesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 sm:ml-auto">
                     <div className="text-right">
                       <p className="font-medium">{rate.rate.toFixed(4)}</p>
                     </div>
