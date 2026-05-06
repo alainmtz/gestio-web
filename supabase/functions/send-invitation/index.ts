@@ -1,6 +1,9 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY') || ''
+const BREVO_FROM_EMAIL = Deno.env.get('BREVO_FROM_EMAIL') || 'admin@fulltimetecnology.com'
+const BREVO_FROM_NAME = Deno.env.get('BREVO_FROM_NAME') || 'Gestio'
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -194,27 +197,28 @@ Deno.serve(async (req: Request) => {
 })
 
 async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  if (!RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not set — skipping email send')
+  if (!BREVO_API_KEY) {
+    console.warn('BREVO_API_KEY not set — skipping email send')
     return
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'api-key': BREVO_API_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Gestio <onboarding@resend.dev>',
-      to: [to],
+      sender: { email: BREVO_FROM_EMAIL, name: BREVO_FROM_NAME },
+      to: [{ email: to }],
       subject,
-      html,
+      htmlContent: html,
     }),
   })
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`Resend API error: ${res.status} ${body}`)
+    throw new Error(`Brevo API error: ${res.status} ${body}`)
   }
 }
+
