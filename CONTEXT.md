@@ -68,6 +68,12 @@ A recorded change in stock balance. Ten types:
 | `CONSIGNMENT_OUT` | Stock sent on consignment |
 | `OPENING` | Initial stock entry |
 
+Movements are applied via the `handle_inventory_movement` PostgreSQL RPC function, which atomically inserts the movement record and updates the `inventory` table. Stock is never modified directly — all changes flow through movements.
+
+### Inventory Report
+
+Stock counting in reports reads from the `inventory` table directly (not recalculated from movements). Low stock alerts use each product-store's `min_quantity` threshold, not a hardcoded value. Products appearing in multiple stores are aggregated for display and charting.
+
 ### Inventory Transfer
 
 A stock transfer between two stores within the same organization. Creates a `TRANSFER_OUT` movement at the source and a `TRANSFER_IN` at the destination.
@@ -105,6 +111,8 @@ A group of users within an organization. Has:
 ### Notification
 
 A persistent notification stored in the `notifications` table with Supabase Realtime subscription for live updates. Created automatically by mutations (schedule changes, inventory alerts, etc.).
+
+Notifications include contextual metadata — organization name, inviting user, target member — displayed in the notification list and detail dialog. Users can accept or decline invitations directly from the notification detail view.
 
 ### Audit Log
 

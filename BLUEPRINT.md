@@ -146,20 +146,20 @@ interface Product {
   storeId?: string;
   categoryId?: string;
   name: string;
-  sku?: string;
+  sku: string;
   barcode?: string;
   description?: string;
-  price: string;
+  price: number;
   priceCurrencyId?: string;
-  cost?: string;
-  minStock: number;
-  maxStock: number;
+  cost: number;
+  taxRate: number;
+  imageUrl?: string;
   isActive: boolean;
   hasVariants: boolean;
-  attributes: Record<string, any>;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  totalStock?: number;
 }
 
 interface ProductVariant {
@@ -188,10 +188,16 @@ interface ProductCategory {
 
 interface Inventory {
   id: string;
+  organizationId: string;
   productId: string;
+  variantId?: string;
   storeId: string;
-  available: number;
-  reserved: number;
+  quantity: number;
+  reservedQuantity: number;
+  minQuantity: number;
+  maxQuantity?: number;
+  lastCountDate?: string;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -199,8 +205,9 @@ interface InventoryMovement {
   id: string;
   organizationId: string;
   productId: string;
+  variantId?: string;
   storeId: string;
-  movementType: 
+  movementType:
     | 'PURCHASE'
     | 'SALE'
     | 'ADJUSTMENT'
@@ -212,14 +219,18 @@ interface InventoryMovement {
     | 'CONSIGNMENT_OUT'
     | 'OPENING';
   quantity: number;
-  balanceBefore: number;
-  balanceAfter: number;
-  referenceId?: string;
+  cost?: number;
   referenceType?: string;
+  referenceId?: string;
   notes?: string;
   userId: string;
   createdAt: string;
 }
+```
+
+All stock changes flow through the `handle_inventory_movement` PostgreSQL RPC function, which atomically inserts the movement record and updates the `inventory` table. Stock is never modified directly.
+
+When creating a product with `initialStock`, the system automatically generates `OPENING` movements for each store entry, which in turn populate the `inventory` table.
 ```
 
 ### 3.3 Customers
@@ -586,6 +597,28 @@ interface AuditLog {
   createdAt: string;
 }
 ```
+
+### 3.10 Notifications
+
+```typescript
+interface Notification {
+  id: string;
+  organizationId: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  context?: Record<string, any>;
+  isRead: boolean;
+  createdAt: string;
+}
+```
+
+Created automatically by mutations (schedule changes, inventory alerts, invitation events). Supabase Realtime subscription for live updates. Context metadata includes organization name, inviting user, target member — displayed in list and detail dialog. Users can accept/decline invitations directly from the detail view.
+
+### 3.11 Email
+
+Invitation emails sent via Brevo HTTP API (not SMTP). Supabase Edge Functions cannot use SMTP, so Brevo's REST endpoint is used. Free tier: 300 emails/day.
 
 ---
 
@@ -1384,11 +1417,29 @@ function useProduct(id: string) {
   });
 }
 
+interface CreateProductInput {
+  sku: string;
+  name: string;
+  description?: string;
+  categoryId?: string;
+  cost?: number;
+  price: number;
+  priceCurrencyId?: string;
+  taxRate?: number;
+  barcode?: string;
+  imageUrl?: string;
+  hasVariants?: boolean;
+  initialStock?: { storeId: string; quantity: number }[];
+}
+
 function useCreateProduct() {
   const queryClient = useQueryClient();
+  const organizationId = useAuthStore((state) => state.currentOrganization?.id);
+  const userId = useAuthStore((state) => state.user?.id);
   
   return useMutation({
-    mutationFn: (data: CreateProductInput) => productApi.create(data),
+    mutationFn: (data: CreateProductInput) =>
+      productApi.create(organizationId!, userId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
