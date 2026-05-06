@@ -64,7 +64,22 @@ export function LoginPage() {
         .select('organization_id, role')
         .eq('user_id', authData.user.id)
 
+      // Check for pending invitations if no active memberships
       if (!memberships || memberships.length === 0) {
+        const { data: pendingInvites } = await supabase
+          .from('organization_invitations')
+          .select('invitation_token, organization_id, role')
+          .eq('email', authData.user.email?.toLowerCase())
+          .is('accepted_at', null)
+          .gt('expires_at', new Date().toISOString())
+
+        if (pendingInvites && pendingInvites.length > 0) {
+          // Redirect to accept the first pending invitation
+          navigate(`/accept-invitation/${pendingInvites[0].invitation_token}`)
+          setLoading(false)
+          return
+        }
+
         throw new Error('No perteneces a ninguna organización')
       }
 
