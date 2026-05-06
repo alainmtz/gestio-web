@@ -6,6 +6,7 @@ import { AuthRouter } from '@/router/AuthRouter'
 import { AcceptInvitationPage } from '@/pages/auth/AcceptInvitationPage'
 import { ToastProvider } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
+import { Analytics } from '@vercel/analytics/react'
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -22,6 +23,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <Analytics />
       <Routes>
         <Route path="/auth/*" element={<AuthRouter />} />
         <Route path="/accept-invitation/:token" element={<AcceptInvitationPage />} />
