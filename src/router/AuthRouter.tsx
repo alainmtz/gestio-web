@@ -3,6 +3,7 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage'
 import { useAuthStore } from '@/stores/authStore'
 
 export function AuthRouter() {
@@ -10,7 +11,7 @@ export function AuthRouter() {
 
   return (
     <Routes>
-      {/* Always accessible — user arrives here via email link with a recovery session */}
+      <Route path="/callback" element={<AuthCallbackPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {isAuthenticated ? (
