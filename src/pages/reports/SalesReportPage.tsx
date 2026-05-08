@@ -21,15 +21,25 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts'
 import { useToast } from '@/lib/toast'
 import { Skeleton } from '@/components/ui/skeleton'
 
-interface SalesData {
+const CURRENCY_COLORS: Record<string, string> = {
+  CUP: '#10b981',
+  USD: '#3b82f6',
+  EUR: '#f59e0b',
+}
+const FALLBACK_COLOR = '#8b5cf6'
+
+interface SalesDay {
   date: string
   total: number
   count: number
+  byCurrency: Record<string, number>
 }
+
 
 const PERIODS = [
   { value: '7d', label: 'Últimos 7 días' },
@@ -61,7 +71,7 @@ export function SalesReportPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['salesReport', organizationId, period, storeId],
     queryFn: async () => {
-      if (!organizationId) return { sales: [], byPayment: [] }
+      if (!organizationId) return { sales: [], currencies: [] as string[], totalsByCurrency: {} as Record<string, number>, totalSales: 0, totalCount: 0 }
 
       let startDate = new Date()
       if (period === '7d') startDate.setDate(startDate.getDate() - 7)
@@ -73,7 +83,7 @@ export function SalesReportPage() {
 
       let query = supabase
         .from('invoices')
-        .select('created_at, total, payment_status')
+        .select('created_at, total, currency:currencies(code), payment_status')
         .eq('organization_id', organizationId)
         .gte('created_at', startDateStr)
         .eq('payment_status', 'paid')
@@ -84,26 +94,41 @@ export function SalesReportPage() {
 
       const { data: invoices } = await query
 
-      const salesByDate: Record<string, SalesData> = {}
-      const salesByPayment: Record<string, number> = {}
+      const salesByDate: Record<string, SalesDay> = {}
+      const totalsByCurrency: Record<string, number> = {}
+      const currencySet = new Set<string>()
 
-      invoices?.forEach((inv) => {
+      invoices?.forEach((inv: any) => {
         const date = inv.created_at.split('T')[0]
+        const code = inv.currency?.code || 'CUP'
+        currencySet.add(code)
+
         if (!salesByDate[date]) {
-          salesByDate[date] = { date, total: 0, count: 0 }
+          salesByDate[date] = { date, total: 0, count: 0, byCurrency: {} }
         }
-        salesByDate[date].total += parseFloat(inv.total.toString())
-        salesByDate[date].count += 1
+        const day = salesByDate[date]
+        const amount = parseFloat(inv.total.toString())
+        day.total += amount
+        day.count += 1
+        day.byCurrency[code] = (day.byCurrency[code] || 0) + amount
+        totalsByCurrency[code] = (totalsByCurrency[code] || 0) + amount
       })
 
+      const currencies = Array.from(currencySet).sort()
       const sales = Object.values(salesByDate)
         .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(-30)
+        .map(day => {
+          const flat: Record<string, number> = {}
+          for (const code of currencies) {
+            flat[`_${code}`] = day.byCurrency[code] || 0
+          }
+          return { ...day, ...flat }
+        })
 
       const totalSales = sales.reduce((acc, s) => acc + s.total, 0)
       const totalCount = sales.reduce((acc, s) => acc + s.count, 0)
 
-      return { sales, totalSales, totalCount }
+      return { sales, currencies, totalsByCurrency, totalSales, totalCount }
     },
     enabled: !!organizationId,
   })
@@ -114,9 +139,16 @@ export function SalesReportPage() {
       return
     }
 
+    const currencyHeaders = data.currencies || []
+    const headers = ['Fecha', ...currencyHeaders.map(c => `Total ${c}`), 'Total General', 'Cantidad']
     const csv = [
-      ['Fecha', 'Total', 'Cantidad'],
-      ...data.sales.map((s: SalesData) => [s.date, s.total.toFixed(2), s.count]),
+      headers,
+      ...data.sales.map((s: SalesDay) => [
+        s.date,
+        ...currencyHeaders.map(c => (s.byCurrency[c] || 0).toFixed(2)),
+        s.total.toFixed(2),
+        s.count,
+      ]),
     ]
       .map((row) => row.join(','))
       .join('\n')
@@ -185,15 +217,25 @@ export function SalesReportPage() {
         </Select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min((data?.currencies?.length || 0) + 2, 4)}, 1fr)` }}>
+        {data?.currencies?.map(code => (
+          <Card key={code}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total en {code}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" style={{ color: CURRENCY_COLORS[code] || FALLBACK_COLOR }}>
+                ${(data.totalsByCurrency[code] || 0).toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Ventas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total General</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${(data?.totalSales || 0).toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold">${(data?.totalSales || 0).toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -202,16 +244,6 @@ export function SalesReportPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.totalCount || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Promedio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${data?.totalCount ? (data.totalSales / data.totalCount).toFixed(2) : '0.00'}
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -229,15 +261,20 @@ export function SalesReportPage() {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 8 }}
-                  formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Ventas']}
+                  formatter={(value, name) => [`$${(Number(value) || 0).toFixed(2)}`, name === 'total' ? 'Total' : name]}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                />
+                <Legend />
+                {data.currencies?.map((code) => (
+                  <Line
+                    key={code}
+                    type="monotone"
+                    dataKey={`_${code}`}
+                    name={code}
+                    stroke={CURRENCY_COLORS[code] || FALLBACK_COLOR}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           ) : (
