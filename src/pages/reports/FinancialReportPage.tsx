@@ -289,8 +289,8 @@ export function FinancialReportPage() {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 8 }}
-                  formatter={(value: number, name: string) => [
-                    `$${fmt(value)}`,
+                  formatter={(value, name) => [
+                    `$${fmt(Number(value ?? 0))}`,
                     name === 'ingresos' ? 'Ingresos' : 'Egresos',
                   ]}
                 />

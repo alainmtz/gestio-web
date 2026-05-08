@@ -375,11 +375,11 @@ export function ExchangeRatesPage() {
                       borderRadius: '8px',
                       fontSize: '12px',
                     }}
-                    formatter={(value: number, name: string) => [
-                      value.toFixed(4),
-                      chartData.pairLabels.get(name) ?? name,
+                    formatter={(value, name) => [
+                      Number(value ?? 0).toFixed(4),
+                      chartData.pairLabels.get(String(name ?? '')) ?? String(name ?? ''),
                     ]}
-                    labelFormatter={(label: string) => `Fecha: ${label}`}
+                    labelFormatter={(label) => `Fecha: ${String(label ?? '')}`}
                   />
                   <Legend
                     wrapperStyle={{ fontSize: '12px' }}

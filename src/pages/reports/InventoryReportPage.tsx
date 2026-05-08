@@ -274,7 +274,7 @@ export function InventoryReportPage() {
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8 }}
-                    formatter={(value: number, _name: string, props: any) => [
+                    formatter={(value, _name, props) => [
                       value,
                       props.payload.totalReserved > 0
                         ? `Stock: ${props.payload.totalQuantity} (reservado: ${props.payload.totalReserved})`

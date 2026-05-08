@@ -229,7 +229,7 @@ export function SalesReportPage() {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 8 }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
+                  formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Ventas']}
                 />
                 <Line
                   type="monotone"
