@@ -287,7 +287,7 @@ describe('Sistema Gestio - Validación completa', () => {
         organization_id: z.string().uuid(),
         store_id: z.string().uuid(),
         user_id: z.string().uuid(),
-        opening_amounts: z.record(z.number()).optional(),
+        opening_amounts: z.record(z.string(), z.number()).optional(),
       })
 
       const validId = '123e4567-e89b-12d3-a456-426614174000'
