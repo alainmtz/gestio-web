@@ -44,9 +44,11 @@ export function useOrganization() {
         .then((orgStores) => {
           const mappedStores = orgStores.map(mapStoreToAuthStore)
           setStores(mappedStores)
-          const existingStore = stores.find(s => s.id === currentStore?.id)
-          if (!existingStore && mappedStores.length > 0) {
-            selectStore(mappedStores[0])
+          if (mappedStores.length > 0 && currentStore) {
+            const existingStore = mappedStores.find(s => s.id === currentStore.id)
+            if (!existingStore) {
+              selectStore(null)
+            }
           }
         })
         .catch(() => {
@@ -61,6 +63,7 @@ export function useOrganization() {
 
   const handleSelectOrganization = async (org: Organization) => {
     selectOrganization(org)
+    selectStore(null)
     queryClient.clear()
   }
 

@@ -10,16 +10,26 @@ import { Analytics } from '@vercel/analytics/react'
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const logout = useAuthStore((state) => state.logout)
   const navigate = useNavigate()
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        logout()
+      }
+    })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        logout()
+      }
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/auth/reset-password', { replace: true })
       }
     })
     return () => subscription.unsubscribe()
-  }, [navigate])
+  }, [navigate, logout])
 
   return (
     <ToastProvider>

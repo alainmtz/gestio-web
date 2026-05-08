@@ -4,9 +4,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 
-const mockAuthState = {
+const mockGetSession = vi.hoisted(() => vi.fn())
+
+const mockAuthState: Record<string, unknown> = vi.hoisted(() => ({
   isAuthenticated: false,
-}
+  logout: vi.fn(() => { mockAuthState.isAuthenticated = false }),
+}))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: (selector: (state: typeof mockAuthState) => unknown) => selector(mockAuthState),
@@ -23,6 +26,7 @@ vi.mock('@/router/AuthRouter', () => ({
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
+      getSession: mockGetSession,
       onAuthStateChange: vi.fn(() => ({
         data: {
           subscription: {
@@ -52,6 +56,7 @@ describe('App auth routing', () => {
   beforeEach(() => {
     mockAuthState.isAuthenticated = false
     vi.clearAllMocks()
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
   })
 
   it('renderiza router de auth cuando no hay sesion', () => {
@@ -61,6 +66,7 @@ describe('App auth routing', () => {
 
   it('renderiza router principal cuando hay sesion', () => {
     mockAuthState.isAuthenticated = true
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'test' } } }, error: null })
 
     renderApp('/dashboard')
     expect(screen.getByText('app-router-content')).toBeInTheDocument()
