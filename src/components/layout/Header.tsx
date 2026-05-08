@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { cn } from '@/lib/utils'
 
 function MobileOrgPopover() {
@@ -168,6 +169,7 @@ function MobileHeaderBar() {
       <SidebarTrigger />
       <MobileOrgPopover />
       <div className="flex-1" />
+      <ThemeToggle />
       <NotificationsPanel />
       <MobileUserPopover />
     </div>
@@ -267,6 +269,7 @@ function DesktopHeaderBar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <NotificationsPanel />
 
         <DropdownMenu>

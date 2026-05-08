@@ -74,6 +74,7 @@ export function PreInvoiceDetailPage() {
   const popoverRef = useRef<HTMLButtonElement>(null)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const itemOrigCurrencyRef = useRef<Record<number, string>>({})
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: storesData } = useStores()
@@ -137,6 +138,9 @@ export function PreInvoiceDetailPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
   const items = watch('items')
+  const watchedCurrencyId = watch('currency_id')
+  const currencyCode = currenciesData?.find(c => c.id === watchedCurrencyId)?.code || 'CUP'
+  const cupCurrencyId = currenciesData?.find(c => c.code === 'CUP')?.id || ''
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -152,7 +156,7 @@ export function PreInvoiceDetailPage() {
   })
 
   const convertToInvoiceMutation = useMutation({
-    mutationFn: () => convertPreInvoiceToInvoice(id!, organizationId!, userId!, getValues().currency_id),
+    mutationFn: () => convertPreInvoiceToInvoice(id!, organizationId!, userId!, preInvoice?.currency_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['preInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
@@ -186,7 +190,8 @@ export function PreInvoiceDetailPage() {
   const addProduct = async (product: Product, index: number) => {
     const stock = getProductStock(product.id)
     const preInvoiceCurrencyId = watch('currency_id')
-    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+    const productCurrencyId = product.price_currency_id || cupCurrencyId
+    itemOrigCurrencyRef.current[index] = productCurrencyId
 
     let unitPrice = product.price
     if (preInvoiceCurrencyId && preInvoiceCurrencyId !== productCurrencyId) {
@@ -201,6 +206,22 @@ export function PreInvoiceDetailPage() {
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
     setProductSearch('')
+  }
+
+  const handleCurrencyChange = async (newCurrencyId: string) => {
+    if (!organizationId) return
+    const oldCurrencyId = getValues().currency_id
+    if (!newCurrencyId || newCurrencyId === oldCurrencyId) return
+    setValue('currency_id', newCurrencyId)
+
+    for (let i = 0; i < fields.length; i++) {
+      const item = items?.[i]
+      if (!item?.product_id || !item.unit_price) continue
+      const fromId = oldCurrencyId || itemOrigCurrencyRef.current[i] || cupCurrencyId
+      if (!fromId || fromId === newCurrencyId) continue
+      const convertedPrice = await convertPrice(organizationId!, item.unit_price, fromId, newCurrencyId)
+      setValue(`items.${i}.unit_price`, Math.round(convertedPrice * 100) / 100)
+    }
   }
 
   const getItemSubtotal = (index: number) => {
@@ -228,9 +249,7 @@ export function PreInvoiceDetailPage() {
       toast({ title: 'Error', description: 'La prefactura no tiene items', variant: 'destructive' })
       return
     }
-    const currentData = getValues()
     try {
-      await updateMutation.mutateAsync({ preInvoiceId: id!, input: currentData })
       await convertToInvoiceMutation.mutateAsync()
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -520,10 +539,10 @@ export function PreInvoiceDetailPage() {
                     Agregar Item
                   </Button>
                   <div className="text-right">
-                    <p className="text-sm">Subtotal: ${totalSubtotal.toFixed(2)}</p>
-                    <p className="text-sm">Descuento: -${totalDiscount.toFixed(2)}</p>
-                    <p className="text-sm">Impuesto: +${totalTax.toFixed(2)}</p>
-                    <p className="font-bold text-lg">Total: ${grandTotal.toFixed(2)}</p>
+                    <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
+                    <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
+                    <p className="text-sm">Impuesto: +{currencyCode} ${totalTax.toFixed(2)}</p>
+                    <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -563,7 +582,7 @@ export function PreInvoiceDetailPage() {
                   <Label>Moneda *</Label>
                   <Select
                     value={watch('currency_id')}
-                    onValueChange={(v) => setValue('currency_id', v)}
+                    onValueChange={handleCurrencyChange}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar moneda" />
@@ -752,13 +771,13 @@ export function PreInvoiceDetailPage() {
                       <Plus className="mr-2 h-4 w-4" />
                       Agregar Item
                     </Button>
-                    <div className="text-right">
-                      <p className="text-sm">Subtotal: ${totalSubtotal.toFixed(2)}</p>
-                      <p className="text-sm">Descuento: -${totalDiscount.toFixed(2)}</p>
-                      <p className="text-sm">Impuesto: +${totalTax.toFixed(2)}</p>
-                      <p className="font-bold text-lg">Total: ${grandTotal.toFixed(2)}</p>
-                    </div>
+                  <div className="text-right">
+                    <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
+                    <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
+                    <p className="text-sm">Impuesto: +{currencyCode} ${totalTax.toFixed(2)}</p>
+                    <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                   </div>
+                </div>
                 </CardContent>
               </Card>
             </div>
@@ -780,7 +799,7 @@ export function PreInvoiceDetailPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Moneda *</Label>
-                    <Select value={watch('currency_id')} onValueChange={(v) => setValue('currency_id', v)}>
+                    <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
                       <SelectTrigger><SelectValue placeholder="Seleccionar moneda" /></SelectTrigger>
                       <SelectContent>
                         {currenciesData?.map((currency) => (
@@ -814,6 +833,7 @@ export function PreInvoiceDetailPage() {
   }
 
   // ── READ-ONLY VIEW ─────────────────────────────────────────────────────────
+  const readOnlyCurrencyCode = preInvoice?.currency?.code || 'CUP'
   return (
     <div className="container py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -827,14 +847,14 @@ export function PreInvoiceDetailPage() {
             <h1 className="text-3xl font-bold tracking-tight">
               Prefactura {preInvoice.number}
             </h1>
-            <p className="text-muted-foreground">
+            <div className="text-muted-foreground">
               Estado: <Badge variant={status.variant}>{status.label}</Badge>
               {preInvoice.rejection_reason && (
                 <span className="ml-2 text-sm text-destructive">
                   ({preInvoice.rejection_reason})
                 </span>
               )}
-            </p>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -926,19 +946,19 @@ export function PreInvoiceDetailPage() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal:</span>
-                <span>${preInvoice.subtotal.toFixed(2)}</span>
+                <span>{readOnlyCurrencyCode} ${preInvoice.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Impuesto:</span>
-                <span>${preInvoice.tax_amount.toFixed(2)}</span>
+                <span>{readOnlyCurrencyCode} ${preInvoice.tax_amount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Descuento:</span>
-                <span>-${preInvoice.discount_amount.toFixed(2)}</span>
+                <span>-{readOnlyCurrencyCode} ${preInvoice.discount_amount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-lg font-bold">
                 <span>Total:</span>
-                <span>${preInvoice.total.toFixed(2)}</span>
+                <span>{readOnlyCurrencyCode} ${preInvoice.total.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>

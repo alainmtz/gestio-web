@@ -166,12 +166,13 @@ export function useAddInvoicePayment() {
   const userId = useAuthStore((state) => state.user?.id)
 
   return useMutation({
-    mutationFn: ({ invoiceId, amount, method, reference }: {
+    mutationFn: ({ invoiceId, amount, method, reference, extra }: {
       invoiceId: string
       amount: number
       method: string
       reference?: string
-    }) => billingApi.addInvoicePayment(invoiceId, userId!, amount, method, reference),
+      extra?: { card_number?: string; customer_name?: string; identity_card?: string; transfer_code?: string }
+    }) => billingApi.addInvoicePayment(invoiceId, userId!, amount, method, reference, extra),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', variables.invoiceId] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })

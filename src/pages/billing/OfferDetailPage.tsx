@@ -55,6 +55,7 @@ export function OfferDetailPage() {
   const popoverRef = useRef<HTMLButtonElement>(null)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const itemOrigCurrencyRef = useRef<Record<number, string>>({})
 
   const { data: storesData } = useStores()
   const { data: currenciesData } = useCurrencies()
@@ -167,6 +168,9 @@ export function OfferDetailPage() {
   })
 
   const items = watch('items')
+  const watchedCurrencyId = watch('currency_id')
+  const currencyCode = currenciesData?.find(c => c.id === watchedCurrencyId)?.code || 'CUP'
+  const cupCurrencyId = currenciesData?.find(c => c.code === 'CUP')?.id || ''
 
   useEffect(() => {
     if (offer) {
@@ -211,7 +215,8 @@ export function OfferDetailPage() {
   const addProduct = async (product: Product, index: number) => {
     const stock = inventoryData?.find(inv => inv.product_id === product.id)?.quantity || 0
     const offerCurrencyId = watch('currency_id')
-    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+    const productCurrencyId = product.price_currency_id || cupCurrencyId
+    itemOrigCurrencyRef.current[index] = productCurrencyId
 
     let unitPrice = product.price
     if (offerCurrencyId && offerCurrencyId !== productCurrencyId) {
@@ -226,6 +231,22 @@ export function OfferDetailPage() {
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
     setProductSearch('')
+  }
+
+  const handleCurrencyChange = async (newCurrencyId: string) => {
+    if (!organizationId) return
+    const oldCurrencyId = getValues().currency_id
+    if (!newCurrencyId || newCurrencyId === oldCurrencyId) return
+    setValue('currency_id', newCurrencyId)
+
+    for (let i = 0; i < fields.length; i++) {
+      const item = items?.[i]
+      if (!item?.product_id || !item.unit_price) continue
+      const fromId = oldCurrencyId || itemOrigCurrencyRef.current[i] || cupCurrencyId
+      if (!fromId || fromId === newCurrencyId) continue
+      const convertedPrice = await convertPrice(organizationId!, item.unit_price, fromId, newCurrencyId)
+      setValue(`items.${i}.unit_price`, Math.round(convertedPrice * 100) / 100)
+    }
   }
 
   const getProductStock = (productId: string): number => {
@@ -481,10 +502,10 @@ export function OfferDetailPage() {
                   Agregar Item
                 </Button>
                 <div className="text-right space-y-0.5">
-                  <p className="text-sm">Subtotal: ${totalSubtotal.toFixed(2)}</p>
-                  <p className="text-sm">Descuento: -${totalDiscount.toFixed(2)}</p>
-                  <p className="text-sm">Impuesto: +${totalTax.toFixed(2)}</p>
-                  <p className="font-bold text-lg">Total: ${grandTotal.toFixed(2)}</p>
+                  <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
+                  <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
+                  <p className="text-sm">Impuesto: +{currencyCode} ${totalTax.toFixed(2)}</p>
+                  <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>
@@ -514,7 +535,7 @@ export function OfferDetailPage() {
 
               <div className="space-y-2">
                 <Label>Moneda *</Label>
-                <Select value={watch('currency_id')} onValueChange={(v) => setValue('currency_id', v)}>
+                <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar moneda" />
                   </SelectTrigger>

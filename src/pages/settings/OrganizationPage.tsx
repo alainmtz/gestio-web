@@ -29,10 +29,8 @@ export function OrganizationPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
-  const { organizations, setOrganizations } = useAuthStore((state) => ({
-    organizations: state.organizations,
-    setOrganizations: state.setOrganizations,
-  }))
+  const organizations = useAuthStore((state) => state.organizations)
+  const setOrganizations = useAuthStore((state) => state.setOrganizations)
   const organization = useAuthStore((state) => state.currentOrganization)
   const selectOrganization = useAuthStore((state) => state.selectOrganization)
   const organizationId = organization?.id

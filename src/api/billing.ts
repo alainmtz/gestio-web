@@ -70,7 +70,8 @@ export async function convertPrice(
       .order('date', { ascending: false })
       .limit(1)
       .maybeSingle()
-    return amount * (data?.rate ?? 1)
+    const rate = data?.rate
+    return rate && rate > 0 ? amount / rate : amount
   }
 
   if (toCurrencyId === cupCurrencyId) {
@@ -84,7 +85,7 @@ export async function convertPrice(
       .limit(1)
       .maybeSingle()
     const rate = data?.rate
-    return rate && rate > 0 ? amount / rate : amount
+    return rate && rate > 0 ? amount * rate : amount
   }
 
   const { data: rates } = await supabase
@@ -103,8 +104,8 @@ export async function convertPrice(
 
   if (!fromRate || !toRate) return amount
 
-  const amountInCup = amount / fromRate
-  return amountInCup * toRate
+  const amountInCup = amount * fromRate
+  return amountInCup / toRate
 }
 
 // ─── Offer ────────────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export interface Offer {
   discount_amount: number
   total: number
   currency_id: string
+  currency?: { code: string }
   exchange_rate?: number
   notes?: string
   valid_until?: string
@@ -194,6 +196,7 @@ export interface PreInvoice {
   discount_amount: number
   total: number
   currency_id: string
+  currency?: { code: string }
   exchange_rate?: number
   notes?: string
   created_by?: string
@@ -246,6 +249,10 @@ export interface InvoicePayment {
   notes?: string
   recorded_by?: string
   created_at: string
+  card_number?: string
+  customer_name?: string
+  identity_card?: string
+  transfer_code?: string
 }
 
 export interface Invoice {
@@ -264,6 +271,7 @@ export interface Invoice {
   total: number
   paid_amount: number
   currency_id: string
+  currency?: { code: string }
   exchange_rate?: number
   due_date?: string
   notes?: string
@@ -303,7 +311,7 @@ export async function getOffers(organizationId: string, options?: {
 }): Promise<{ offers: Offer[]; total: number }> {
   let query = supabase
     .from('offers')
-    .select('*, customer:customers(name, code)', { count: 'exact' })
+    .select('*, customer:customers(name, code), currency:currencies(code)', { count: 'exact' })
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
 
@@ -325,7 +333,7 @@ export async function getOffers(organizationId: string, options?: {
 export async function getOffer(id: string): Promise<Offer | null> {
   const { data, error } = await supabase
     .from('offers')
-    .select('*, customer:customers(name, code), items:offer_items(*)')
+    .select('*, customer:customers(name, code), currency:currencies(code), items:offer_items(*)')
     .eq('id', id)
     .maybeSingle()
 
@@ -403,7 +411,7 @@ export async function getInvoices(organizationId: string, options?: {
 }): Promise<{ invoices: Invoice[]; total: number }> {
   let query = supabase
     .from('invoices')
-    .select('*, customer:customers(name, code)', { count: 'exact' })
+    .select('*, customer:customers(name, code), currency:currencies(code)', { count: 'exact' })
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
 
@@ -426,7 +434,7 @@ export async function getInvoices(organizationId: string, options?: {
 export async function getInvoice(id: string): Promise<Invoice | null> {
   const { data, error } = await supabase
     .from('invoices')
-    .select('*, customer:customers(name, code), items:invoice_items(*), payments(*)')
+    .select('*, customer:customers(name, code), currency:currencies(code), items:invoice_items(*), payments(*)')
     .eq('id', id)
     .maybeSingle()
 
@@ -515,7 +523,14 @@ export async function createInvoice(organizationId: string, userId: string, inpu
   return invoice
 }
 
-export async function addInvoicePayment(invoiceId: string, userId: string, amount: number, method: string, reference?: string): Promise<InvoicePayment> {
+export async function addInvoicePayment(
+  invoiceId: string,
+  userId: string,
+  amount: number,
+  method: string,
+  reference?: string,
+  extra?: { card_number?: string; customer_name?: string; identity_card?: string; transfer_code?: string },
+): Promise<InvoicePayment> {
   const invoice = await getInvoice(invoiceId)
   if (!invoice) throw new Error('Invoice not found')
 
@@ -531,6 +546,10 @@ export async function addInvoicePayment(invoiceId: string, userId: string, amoun
       transaction_date: new Date().toISOString().split('T')[0],
       created_by: userId,
       reference: reference || null,
+      card_number: extra?.card_number || null,
+      customer_name: extra?.customer_name || null,
+      identity_card: extra?.identity_card || null,
+      transfer_code: extra?.transfer_code || null,
     })
     .select()
     .single()
@@ -557,7 +576,7 @@ export async function getPreInvoices(organizationId: string, options?: {
 }): Promise<{ preInvoices: PreInvoice[]; total: number }> {
   let query = supabase
     .from('pre_invoices')
-    .select('*, customer:customers(name, code)', { count: 'exact' })
+    .select('*, customer:customers(name, code), currency:currencies(code)', { count: 'exact' })
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
 
@@ -579,7 +598,7 @@ export async function getPreInvoices(organizationId: string, options?: {
 export async function getPreInvoice(id: string): Promise<PreInvoice | null> {
   const { data, error } = await supabase
     .from('pre_invoices')
-    .select('*, customer:customers(name, code), items:pre_invoice_items(*)')
+    .select('*, customer:customers(name, code), currency:currencies(code), items:pre_invoice_items(*)')
     .eq('id', id)
     .maybeSingle()
 
@@ -673,7 +692,7 @@ export async function updateOffer(offerId: string, input: UpdateOfferInput): Pro
   const existingOffer = await getOffer(offerId)
   if (!existingOffer) throw new Error('Offer not found')
 
-  const nextCurrencyId = input.currency_id ?? existingOffer.currency_id
+  const nextCurrencyId = input.currency_id || existingOffer.currency_id
   const exchangeRate = await resolveExchangeRateToCup(existingOffer.organization_id, nextCurrencyId)
 
   let subtotal = 0, taxAmount = 0, discountAmount = 0
@@ -704,7 +723,7 @@ export async function updateOffer(offerId: string, input: UpdateOfferInput): Pro
     .update({
       store_id: input.store_id,
       customer_id: input.customer_id || null,
-      currency_id: input.currency_id,
+      currency_id: nextCurrencyId,
       exchange_rate: exchangeRate,
       notes: input.notes || null,
       valid_until: input.valid_until || null,
@@ -743,7 +762,7 @@ export async function updatePreInvoice(preInvoiceId: string, input: UpdatePreInv
   const existingPreInvoice = await getPreInvoice(preInvoiceId)
   if (!existingPreInvoice) throw new Error('Pre-invoice not found')
 
-  const nextCurrencyId = input.currency_id ?? existingPreInvoice.currency_id
+  const nextCurrencyId = input.currency_id || existingPreInvoice.currency_id
   const exchangeRate = await resolveExchangeRateToCup(
     existingPreInvoice.organization_id,
     nextCurrencyId,
@@ -778,7 +797,7 @@ export async function updatePreInvoice(preInvoiceId: string, input: UpdatePreInv
     .update({
       store_id: input.store_id,
       customer_id: input.customer_id || null,
-      currency_id: input.currency_id,
+      currency_id: nextCurrencyId,
       exchange_rate: exchangeRate,
       notes: input.notes || null,
       subtotal,
@@ -958,9 +977,10 @@ export async function convertOfferToPreInvoice(offerId: string, organizationId: 
   if (error) throw error
 
   if (convertedItems.length > 0) {
-    await supabase.from('pre_invoice_items').insert(
-      convertedItems.map(item => ({ ...item, pre_invoice_id: preInvoice.id }))
+    const { error: itemsError } = await supabase.from('pre_invoice_items').insert(
+      convertedItems.map(({ id, ...item }) => ({ ...item, pre_invoice_id: preInvoice.id }))
     )
+    if (itemsError) throw itemsError
   }
 
   await supabase.from('offers').update({ status: 'sent' }).eq('id', offerId)
@@ -1035,9 +1055,10 @@ export async function convertOfferToInvoice(offerId: string, organizationId: str
   if (error) throw error
 
   if (convertedItems.length > 0) {
-    await supabase.from('invoice_items').insert(
-      convertedItems.map(item => ({ ...item, invoice_id: invoice.id }))
+    const { error: itemsError } = await supabase.from('invoice_items').insert(
+      convertedItems.map(({ id, ...item }) => ({ ...item, invoice_id: invoice.id }))
     )
+    if (itemsError) throw itemsError
 
     for (const item of convertedItems) {
       if (item.product_id) {
@@ -1131,9 +1152,10 @@ export async function convertPreInvoiceToInvoice(preInvoiceId: string, organizat
   if (error) throw error
 
   if (convertedItems.length > 0) {
-    await supabase.from('invoice_items').insert(
-      convertedItems.map(item => ({ ...item, invoice_id: invoice.id }))
+    const { error: itemsError } = await supabase.from('invoice_items').insert(
+      convertedItems.map(({ id, ...item }) => ({ ...item, invoice_id: invoice.id }))
     )
+    if (itemsError) throw itemsError
 
     for (const item of convertedItems) {
       if (item.product_id) {

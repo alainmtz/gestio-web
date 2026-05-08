@@ -129,7 +129,7 @@ export function PreInvoicesPage() {
                           <Link to={`/billing/preinvoices/${preInvoice.id}`} className="font-medium hover:underline">{preInvoice.number}</Link>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                             <span>{preInvoice.customer?.name || '-'}</span>
-                            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${preInvoice.total.toFixed(2)}</span>
+                            <span className="flex items-center gap-1">{preInvoice.currency?.code || 'CUP'} ${preInvoice.total.toFixed(2)}</span>
                             <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(preInvoice.created_at).toLocaleDateString('es-ES')}</span>
                           </div>
                         </div>

@@ -5,5 +5,5 @@ import { useAuthStore } from '@/stores/authStore'
  */
 export function useDefaultCurrency(): string {
   const currentStore = useAuthStore((state) => state.currentStore)
-  return currentStore?.currencyId || '11111111-1111-1111-1111-111111111111'
+  return currentStore?.currencyId || ''
 }

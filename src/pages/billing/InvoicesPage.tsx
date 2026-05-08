@@ -132,7 +132,7 @@ export function InvoicesPage() {
                           <Link to={`/billing/invoices/${invoice.id}`} className="font-medium hover:underline">{invoice.number}</Link>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                             <span>{invoice.customer?.name || '-'}</span>
-                            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${invoice.total.toFixed(2)}</span>
+                            <span className="flex items-center gap-1">{invoice.currency?.code || 'CUP'} ${invoice.total.toFixed(2)}</span>
                             {invoice.created_at && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(invoice.created_at).toLocaleDateString('es-ES')}</span>}
                           </div>
                         </div>

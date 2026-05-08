@@ -60,11 +60,16 @@ export function InvoiceDetailPage() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash')
+  const [paymentCardNumber, setPaymentCardNumber] = useState('')
+  const [paymentCustomerName, setPaymentCustomerName] = useState('')
+  const [paymentIdentityCard, setPaymentIdentityCard] = useState('')
+  const [paymentTransferCode, setPaymentTransferCode] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState<string>('none')
   const [productSearch, setProductSearch] = useState('')
   const [openProductPopover, setOpenProductPopover] = useState<number | null>(null)
   const popoverRef = useRef<HTMLButtonElement>(null)
   const printRef = useRef<HTMLDivElement>(null)
+  const itemOrigCurrencyRef = useRef<Record<number, string>>({})
 
   const { data: storesData } = useStores()
   const { data: currenciesData } = useCurrencies()
@@ -113,7 +118,7 @@ export function InvoiceDetailPage() {
   const cancelMutation = useCancelInvoice()
   const paymentMutation = useAddInvoicePayment()
 
-  const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting } } = useForm<InvoiceFormData>({
+  const { register, handleSubmit, control, setValue, watch, reset, getValues, formState: { errors, isSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
       store_id: currentStore?.id || '',
@@ -127,6 +132,9 @@ export function InvoiceDetailPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
   const items = watch('items')
+  const watchedCurrencyId = watch('currency_id')
+  const formCurrencyCode = currenciesData?.find(c => c.id === watchedCurrencyId)?.code || 'CUP'
+  const cupCurrencyId = currenciesData?.find(c => c.code === 'CUP')?.id || ''
 
   // Populate form when loading existing invoice (new) or entering edit mode
   useEffect(() => {
@@ -157,7 +165,8 @@ export function InvoiceDetailPage() {
   const addProduct = async (product: Product, index: number) => {
     const stock = getProductStock(product.id)
     const invoiceCurrencyId = watch('currency_id')
-    const productCurrencyId = product.price_currency_id || defaultCurrencyId
+    const productCurrencyId = product.price_currency_id || cupCurrencyId
+    itemOrigCurrencyRef.current[index] = productCurrencyId
 
     let unitPrice = product.price
     if (invoiceCurrencyId && invoiceCurrencyId !== productCurrencyId) {
@@ -172,6 +181,22 @@ export function InvoiceDetailPage() {
     setValue(`items.${index}.available_stock`, stock)
     setOpenProductPopover(null)
     setProductSearch('')
+  }
+
+  const handleCurrencyChange = async (newCurrencyId: string) => {
+    if (!organizationId) return
+    const oldCurrencyId = getValues().currency_id
+    if (!newCurrencyId || newCurrencyId === oldCurrencyId) return
+    setValue('currency_id', newCurrencyId)
+
+    for (let i = 0; i < fields.length; i++) {
+      const item = items?.[i]
+      if (!item?.product_id || !item.unit_price) continue
+      const fromId = oldCurrencyId || itemOrigCurrencyRef.current[i] || cupCurrencyId
+      if (!fromId || fromId === newCurrencyId) continue
+      const convertedPrice = await convertPrice(organizationId!, item.unit_price, fromId, newCurrencyId)
+      setValue(`items.${i}.unit_price`, Math.round(convertedPrice * 100) / 100)
+    }
   }
 
   const getItemTotal = (index: number) => {
@@ -237,13 +262,20 @@ export function InvoiceDetailPage() {
       toast({ title: 'Error', description: 'Monto inválido', variant: 'destructive' })
       return
     }
+    const extra = paymentMethod === 'card' || paymentMethod === 'transfer'
+      ? { card_number: paymentCardNumber || undefined, customer_name: paymentCustomerName || undefined, identity_card: paymentIdentityCard || undefined, transfer_code: paymentTransferCode || undefined }
+      : undefined
     await paymentMutation.mutateAsync(
-      { invoiceId: id!, amount, method: paymentMethod },
+      { invoiceId: id!, amount, method: paymentMethod, extra },
       {
         onSuccess: () => {
           toast({ title: 'Pago registrado', description: 'El pago se ha registrado correctamente', variant: 'default' })
           setShowPaymentDialog(false)
           setPaymentAmount('')
+          setPaymentCardNumber('')
+          setPaymentCustomerName('')
+          setPaymentIdentityCard('')
+          setPaymentTransferCode('')
         },
         onError: (error: Error) => {
           toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -333,7 +365,22 @@ export function InvoiceDetailPage() {
     </div>
     <div class="details-section">
       <h3>Detalles de pago</h3>
-      <p><span class="label">Método:</span> ${(invoice as any).payment_method || '—'}</p>
+      ${invoice.payments && invoice.payments.length > 0
+        ? invoice.payments.map(p => {
+          const extra = []
+          if (p.customer_name) extra.push(`Cliente: ${p.customer_name}`)
+          if (p.identity_card) extra.push(`CI: ${p.identity_card}`)
+          if (p.card_number) extra.push(`Tarjeta: ${p.card_number}`)
+          if (p.transfer_code) extra.push(`Código: ${p.transfer_code}`)
+          if (p.reference) extra.push(`Ref: ${p.reference}`)
+          return `
+      <p style="margin-bottom:6px;">
+        <strong>${new Date(p.created_at).toLocaleDateString('es-ES')}</strong> — ${p.payment_method} — $${p.amount.toFixed(2)}
+      </p>
+      ${extra.length ? `<p style="font-size:13px;color:#555;margin-bottom:10px;">${extra.join(' | ')}</p>` : ''}`
+        }).join('')
+        : '<p>—</p>'
+      }
       ${invoice.due_date ? `<p><span class="label">Vencimiento:</span> ${new Date(invoice.due_date).toLocaleDateString('es-ES')}</p>` : ''}
     </div>
   </div>
@@ -514,10 +561,10 @@ export function InvoiceDetailPage() {
             Agregar Item
           </Button>
           <div className="text-right">
-            <p className="text-sm">Subtotal: ${totals.subtotal.toFixed(2)}</p>
-            <p className="text-sm">Descuento: -${totals.discount.toFixed(2)}</p>
-            <p className="text-sm">Impuesto: +${totals.tax.toFixed(2)}</p>
-            <p className="font-bold text-lg">Total: ${totals.total.toFixed(2)}</p>
+            <p className="text-sm">Subtotal: {formCurrencyCode} ${totals.subtotal.toFixed(2)}</p>
+            <p className="text-sm">Descuento: -{formCurrencyCode} ${totals.discount.toFixed(2)}</p>
+            <p className="text-sm">Impuesto: +{formCurrencyCode} ${totals.tax.toFixed(2)}</p>
+            <p className="font-bold text-lg">Total: {formCurrencyCode} ${totals.total.toFixed(2)}</p>
           </div>
         </div>
       </CardContent>
@@ -614,10 +661,10 @@ export function InvoiceDetailPage() {
             <h1 className="text-3xl font-bold tracking-tight">
               Factura {invoice?.number || ''}
             </h1>
-            <p className="text-muted-foreground flex items-center gap-2">
+            <div className="text-muted-foreground flex items-center gap-2">
               {invoiceStatus && <Badge variant={invoiceStatus.variant}>{invoiceStatus.label}</Badge>}
               {invoice && `| Pago: ${invoice.payment_status}`}
-            </p>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -651,24 +698,26 @@ export function InvoiceDetailPage() {
         </div>
       </div>
 
-      {invoice && (
+      {invoice && (() => {
+        const roCurrencyCode = invoice.currency?.code || 'CUP'
+        return (
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="pt-4">
               <div className="text-sm text-muted-foreground">Total</div>
-              <div className="text-2xl font-bold">${invoice.total.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{roCurrencyCode} ${invoice.total.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-sm text-muted-foreground">Pagado</div>
-              <div className="text-2xl font-bold text-green-600">${invoice.paid_amount.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-600">{roCurrencyCode} ${invoice.paid_amount.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-sm text-muted-foreground">Pendiente</div>
-              <div className="text-2xl font-bold text-orange-600">${remainingBalance.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-orange-600">{roCurrencyCode} ${remainingBalance.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -678,7 +727,8 @@ export function InvoiceDetailPage() {
             </CardContent>
           </Card>
         </div>
-      )}
+        )
+      })()}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -775,16 +825,16 @@ export function InvoiceDetailPage() {
             <CardHeader><CardTitle>Totales</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span><span>${invoice?.subtotal?.toFixed(2) ?? '0.00'}</span>
+                <span>Subtotal</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.subtotal?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Impuestos</span><span>${invoice?.tax_amount?.toFixed(2) ?? '0.00'}</span>
+                <span>Impuestos</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.tax_amount?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Descuentos</span><span>-${invoice?.discount_amount?.toFixed(2) ?? '0.00'}</span>
+                <span>Descuentos</span><span>-{invoice?.currency?.code || 'CUP'} ${invoice?.discount_amount?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between border-t pt-2 text-lg font-bold">
-                <span>Total</span><span>${invoice?.total.toFixed(2) ?? '0.00'}</span>
+                <span>Total</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.total.toFixed(2) ?? '0.00'}</span>
               </div>
             </CardContent>
           </Card>
@@ -793,11 +843,18 @@ export function InvoiceDetailPage() {
             <Card>
               <CardHeader><CardTitle>Pagos ({invoice.payments.length})</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {invoice.payments.map((payment) => (
-                    <div key={payment.id} className="flex justify-between text-sm">
-                      <span>{new Date(payment.created_at).toLocaleDateString()} - {payment.payment_method}</span>
-                      <span className="font-medium">${payment.amount.toFixed(2)}</span>
+                    <div key={payment.id} className="text-sm border-b pb-2 last:border-0">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{new Date(payment.created_at).toLocaleDateString()} - {payment.payment_method}</span>
+                        <span className="font-medium">${payment.amount.toFixed(2)}</span>
+                      </div>
+                      {payment.customer_name && <div className="text-muted-foreground mt-1">Cliente: {payment.customer_name}</div>}
+                      {payment.identity_card && <div className="text-muted-foreground">CI: {payment.identity_card}</div>}
+                      {payment.card_number && <div className="text-muted-foreground">Tarjeta: {payment.card_number}</div>}
+                      {payment.transfer_code && <div className="text-muted-foreground">Código transf.: {payment.transfer_code}</div>}
+                      {payment.reference && <div className="text-muted-foreground">Ref: {payment.reference}</div>}
                     </div>
                   ))}
                 </div>
@@ -828,7 +885,10 @@ export function InvoiceDetailPage() {
             </div>
             <div className="space-y-2">
               <Label>Método de pago</Label>
-              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'card' | 'transfer') => setPaymentMethod(v)}>
+              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'card' | 'transfer') => {
+                setPaymentMethod(v)
+                if (v === 'cash') { setPaymentCardNumber(''); setPaymentTransferCode('') }
+              }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Efectivo</SelectItem>
@@ -837,6 +897,41 @@ export function InvoiceDetailPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {paymentMethod === 'card' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Número de tarjeta receptora</Label>
+                  <Input value={paymentCardNumber} onChange={(e) => setPaymentCardNumber(e.target.value)} placeholder="Últimos 4 dígitos" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre completo del cliente</Label>
+                  <Input value={paymentCustomerName} onChange={(e) => setPaymentCustomerName(e.target.value)} placeholder="Nombre y apellidos" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carnet de identidad</Label>
+                  <Input value={paymentIdentityCard} onChange={(e) => setPaymentIdentityCard(e.target.value)} placeholder="Número de carnet" />
+                </div>
+              </>
+            )}
+
+            {paymentMethod === 'transfer' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Código de transferencia</Label>
+                  <Input value={paymentTransferCode} onChange={(e) => setPaymentTransferCode(e.target.value)} placeholder="Número de referencia" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre completo del cliente</Label>
+                  <Input value={paymentCustomerName} onChange={(e) => setPaymentCustomerName(e.target.value)} placeholder="Nombre y apellidos" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carnet de identidad</Label>
+                  <Input value={paymentIdentityCard} onChange={(e) => setPaymentIdentityCard(e.target.value)} placeholder="Número de carnet" />
+                </div>
+              </>
+            )}
+
             <div className="text-sm text-muted-foreground">Pendiente: ${remainingBalance.toFixed(2)}</div>
           </div>
           <DialogFooter>
@@ -871,7 +966,7 @@ export function InvoiceDetailPage() {
           </div>
           <div className="space-y-2">
             <Label>Moneda *</Label>
-            <Select value={watch('currency_id')} onValueChange={(v) => setValue('currency_id', v)}>
+            <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
               <SelectTrigger><SelectValue placeholder="Seleccionar moneda" /></SelectTrigger>
               <SelectContent>
                 {currenciesData?.map((currency) => (
@@ -910,10 +1005,10 @@ export function InvoiceDetailPage() {
       <Card>
         <CardHeader><CardTitle>Totales</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <div className="flex justify-between"><span>Subtotal</span><span>${totals.subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Impuestos</span><span>${totals.tax.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Descuentos</span><span>-${totals.discount.toFixed(2)}</span></div>
-          <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>${totals.total.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Subtotal</span><span>{formCurrencyCode} ${totals.subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Impuestos</span><span>{formCurrencyCode} ${totals.tax.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Descuentos</span><span>-{formCurrencyCode} ${totals.discount.toFixed(2)}</span></div>
+          <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>{formCurrencyCode} ${totals.total.toFixed(2)}</span></div>
         </CardContent>
       </Card>
     )

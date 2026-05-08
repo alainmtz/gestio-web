@@ -131,7 +131,7 @@ export function OffersPage() {
                           <Link to={`/billing/offers/${offer.id}`} className="font-medium hover:underline">{offer.number}</Link>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                             <span>{offer.customer?.name || '-'}</span>
-                            <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />${offer.total.toFixed(2)}</span>
+                            <span className="flex items-center gap-1">{offer.currency?.code || 'CUP'} ${offer.total.toFixed(2)}</span>
                             {offer.valid_until && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(offer.valid_until).toLocaleDateString()}</span>}
                           </div>
                         </div>
