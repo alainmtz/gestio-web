@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,6 +25,7 @@ import {
 } from 'recharts'
 import { useToast } from '@/lib/toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getLatestRatesToCupByCodes } from '@/api/settings'
 
 const CURRENCY_COLORS: Record<string, string> = {
   CUP: '#10b981',
@@ -51,6 +52,7 @@ const PERIODS = [
 export function SalesReportPage() {
   const [period, setPeriod] = useState('30d')
   const [storeId, setStoreId] = useState<string>('_all')
+  const [targetCurrency, setTargetCurrency] = useState<string>('')
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
@@ -133,6 +135,31 @@ export function SalesReportPage() {
     enabled: !!organizationId,
   })
 
+  const currencies = data?.currencies ?? []
+  const effectiveTargetCurrency = targetCurrency || currencies[0] || ''
+
+  const { data: ratesData } = useQuery({
+    queryKey: ['salesReportRates', organizationId, currencies],
+    queryFn: () => getLatestRatesToCupByCodes(organizationId!, currencies),
+    enabled: !!organizationId && currencies.length > 0,
+  })
+
+  const convertedTotal = useMemo(() => {
+    if (!ratesData || !data?.totalsByCurrency || !effectiveTargetCurrency) return null
+    const rates = ratesData as Record<string, number>
+    const targetRate = rates[effectiveTargetCurrency]
+    if (!targetRate || targetRate <= 0) return null
+
+    let totalInCup = 0
+    for (const [code, amount] of Object.entries(data.totalsByCurrency)) {
+      const rate = rates[code]
+      if (rate && rate > 0) {
+        totalInCup += Number(amount) * rate
+      }
+    }
+    return totalInCup / targetRate
+  }, [ratesData, data?.totalsByCurrency, effectiveTargetCurrency])
+
   const handleExport = () => {
     if (!data?.sales?.length) {
       toast({ title: 'Sin datos', description: 'No hay datos para exportar', variant: 'destructive' })
@@ -140,7 +167,7 @@ export function SalesReportPage() {
     }
 
     const currencyHeaders = data.currencies || []
-    const headers = ['Fecha', ...currencyHeaders.map(c => `Total ${c}`), 'Total General', 'Cantidad']
+    const headers = ['Fecha', ...currencyHeaders.map(c => `Total ${c}`), `Total (${effectiveTargetCurrency})`, 'Cantidad']
     const csv = [
       headers,
       ...data.sales.map((s: SalesDay) => [
@@ -232,10 +259,30 @@ export function SalesReportPage() {
         ))}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total General</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Convertido
+              </CardTitle>
+              {currencies.length > 1 && (
+                <Select value={targetCurrency || currencies[0]} onValueChange={setTargetCurrency}>
+                  <SelectTrigger className="w-20 h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((code: string) => (
+                      <SelectItem key={code} value={code}>{code}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(data?.totalSales || 0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              {convertedTotal !== null
+                ? `${convertedTotal.toFixed(2)} ${effectiveTargetCurrency}`
+                : '—'}
+            </div>
           </CardContent>
         </Card>
         <Card>

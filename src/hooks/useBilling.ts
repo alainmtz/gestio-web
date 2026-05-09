@@ -176,6 +176,12 @@ export function useAddInvoicePayment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', variables.invoiceId] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -254,6 +260,12 @@ export function useCreateInvoice() {
       billingApi.createInvoice(organizationId!, userId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -269,18 +281,28 @@ export function useUpdateInvoice() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', variables.invoiceId] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
 
 export function useCancelInvoice() {
   const queryClient = useQueryClient()
+  const userId = useAuthStore((state) => state.user?.id)
 
   return useMutation({
-    mutationFn: (invoiceId: string) => billingApi.cancelInvoice(invoiceId),
+    mutationFn: (invoiceId: string) => billingApi.cancelInvoice(invoiceId, userId ?? undefined),
     onSuccess: (_, invoiceId) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

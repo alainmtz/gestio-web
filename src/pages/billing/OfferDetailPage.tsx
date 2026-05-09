@@ -158,7 +158,7 @@ export function OfferDetailPage() {
       currency_id: '',
       notes: '',
       valid_until: '',
-      items: [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
+      items: [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined }],
     },
   })
 
@@ -189,6 +189,8 @@ export function OfferDetailPage() {
           tax_rate: item.tax_rate,
           discount_percentage: item.discount_percentage,
           available_stock: 0,
+          warranty_duration: item.warranty_duration,
+          warranty_period: item.warranty_period,
         })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
@@ -491,13 +493,35 @@ export function OfferDetailPage() {
                           </Button>
                         </div>
                       </div>
+                      <div className="flex gap-2 items-center">
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
+                          className="w-16 text-center"
+                          placeholder="0"
+                        />
+                        <Select
+                          value={items?.[index]?.warranty_period || ''}
+                          onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="days">Días</SelectItem>
+                            <SelectItem value="months">Meses</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   )
                 })}
               </div>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4 pt-4 border-t">
-                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 })}>
+                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
                   <Plus className="mr-2 h-4 w-4" />
                   Agregar Item
                 </Button>

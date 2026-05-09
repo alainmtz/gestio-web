@@ -81,7 +81,7 @@ export function AppRouter() {
         </Route>
 
         <Route path="/suppliers" element={<PermissionRoute permission={PERMISSIONS.SUPPLIER_VIEW}><Outlet /></PermissionRoute>}>
-          <Route index element={<SuppliersPage />} />
+          <Route index element={<SuspensePage><SuppliersPage /></SuspensePage>} />
           <Route path="new" element={<SuspensePage><SupplierDetailPage /></SuspensePage>} />
           <Route path=":id" element={<SuspensePage><SupplierDetailPage /></SuspensePage>} />
         </Route>
@@ -100,7 +100,7 @@ export function AppRouter() {
         </Route>
 
         <Route path="/stores" element={<PermissionRoute permission={PERMISSIONS.STORE_VIEW}><Outlet /></PermissionRoute>}>
-          <Route index element={<StoresPage />} />
+          <Route index element={<SuspensePage><StoresPage /></SuspensePage>} />
           <Route path="new" element={<SuspensePage><StoreDetailPage /></SuspensePage>} />
           <Route path=":id" element={<SuspensePage><StoreDetailPage /></SuspensePage>} />
         </Route>
@@ -120,7 +120,7 @@ export function AppRouter() {
         </Route>
 
         <Route path="/teams" element={<PermissionRoute permission={PERMISSIONS.TEAM_VIEW}><Outlet /></PermissionRoute>}>
-          <Route index element={<TeamsPage />} />
+          <Route index element={<SuspensePage><TeamsPage /></SuspensePage>} />
           <Route path="new" element={<SuspensePage><TeamDetailPage /></SuspensePage>} />
           <Route path=":id" element={<SuspensePage><TeamDetailPage /></SuspensePage>} />
           <Route path="schedules" element={<SuspensePage><SchedulesPage /></SuspensePage>} />

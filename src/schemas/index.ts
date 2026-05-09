@@ -75,12 +75,14 @@ export type TeamFormData = z.infer<typeof teamSchema>
 export const documentItemSchema = z.object({
   product_id: z.string().optional(),
   description: z.string().min(1, 'El nombre del producto es requerido'),
-  sku: z.string().optional(),           // UI-only (not persisted to DB)
-  available_stock: z.number().optional(), // UI-only
+  sku: z.string().optional(),
+  available_stock: z.number().optional(),
   quantity: z.coerce.number().min(0.001, 'La cantidad debe ser mayor a 0'),
   unit_price: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0'),
   tax_rate: z.coerce.number().min(0).max(100).optional(),
   discount_percentage: z.coerce.number().min(0).max(100).optional(),
+  warranty_duration: z.coerce.number().int().min(0).optional(),
+  warranty_period: z.enum(['days', 'months']).optional(),
 })
 
 export type DocumentItemFormData = z.infer<typeof documentItemSchema>

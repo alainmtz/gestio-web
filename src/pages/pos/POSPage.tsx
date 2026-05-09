@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,14 +8,14 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Package, ShoppingCart, CreditCard, User, Plus, Minus, Trash2, Search, Loader2, DollarSign, ShieldX, Pause, Clock, Receipt } from 'lucide-react'
+import { Package, ShoppingCart, CreditCard, User, Plus, Minus, Trash2, Search, Loader2, DollarSign, ShieldX, Pause, Clock, Receipt, Info, ArrowLeftRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
-import { createMovement } from '@/api/products'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
 import { convertPrice } from '@/api/billing'
+import { fetchActiveSession, formatCurrencyAmounts, type CashSession } from '@/api/cashRegister'
 
 interface Product {
   id: string
@@ -29,12 +30,6 @@ interface Product {
 interface CartItem {
   product: Product
   quantity: number
-}
-
-interface CashSession {
-  id: string
-  store_id: string
-  status: string
 }
 
 interface HeldOrder {
@@ -62,6 +57,7 @@ function saveHeldOrders(orders: HeldOrder[]) {
 }
 
 export function POSPage() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
@@ -89,26 +85,61 @@ export function POSPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [showHeldOrders, setShowHeldOrders] = useState(false)
   const [heldOrders, setHeldOrders] = useState<HeldOrder[]>(getHeldOrders)
+  const [paymentCardNumber, setPaymentCardNumber] = useState('')
+  const [paymentCustomerName, setPaymentCustomerName] = useState('')
+  const [paymentIdentityCard, setPaymentIdentityCard] = useState('')
+  const [paymentTransferCode, setPaymentTransferCode] = useState('')
 
   const defaultCurrencyId = useDefaultCurrency()
 
-  const { data: activeCurrency } = useQuery({
-    queryKey: ['defaultCurrency', defaultCurrencyId],
-    queryFn: async () => defaultCurrencyId,
+  const { data: currencies } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const { data } = await supabase.from('currencies').select('id, code, symbol').eq('is_active', true).order('code')
+      return (data || []) as { id: string; code: string; symbol?: string }[]
+    },
   })
+
+  const [paymentCurrencyId, setPaymentCurrencyId] = useState<string | null>(null)
+  useEffect(() => {
+    if (defaultCurrencyId && !paymentCurrencyId) {
+      setPaymentCurrencyId(defaultCurrencyId)
+    }
+  }, [defaultCurrencyId])
+
+  const paymentCurrency = currencies?.find(c => c.id === paymentCurrencyId)
+
+  const [convertedTotal, setConvertedTotal] = useState(0)
+  const [convertingTotal, setConvertingTotal] = useState(false)
+  const convertCart = useCallback(async (targetId: string) => {
+    if (!organizationId || cart.length === 0) {
+      setConvertedTotal(0)
+      setConvertingTotal(false)
+      return
+    }
+    setConvertingTotal(true)
+    let total = 0
+    for (const item of cart) {
+      const productCurrencyId = item.product.price_currency_id || defaultCurrencyId || targetId
+      let unitPrice = item.product.price
+      if (targetId !== productCurrencyId) {
+        try {
+          unitPrice = await convertPrice(organizationId, item.product.price, productCurrencyId, targetId)
+        } catch { /* fallback to original price */ }
+      }
+      total += Math.round(unitPrice * item.quantity * 100) / 100
+    }
+    setConvertedTotal(total)
+    setConvertingTotal(false)
+  }, [cart, organizationId, defaultCurrencyId])
+
+  useEffect(() => {
+    if (paymentCurrencyId) convertCart(paymentCurrencyId)
+  }, [paymentCurrencyId, convertCart])
 
   const { data: activeSession } = useQuery({
     queryKey: ['activeCashSession', organizationId, userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('cash_register_sessions')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .eq('user_id', userId)
-        .eq('status', 'open')
-        .maybeSingle()
-      return data as CashSession | null
-    },
+    queryFn: () => fetchActiveSession(organizationId!, userId!),
     enabled: !!organizationId && !!userId,
   })
 
@@ -149,6 +180,24 @@ export function POSPage() {
     enabled: !!organizationId,
   })
 
+  const { data: inventoryData } = useQuery({
+    queryKey: ['posInventory', organizationId, currentStore?.id],
+    queryFn: async () => {
+      if (!organizationId) return []
+      let query = supabase
+        .from('inventory')
+        .select('product_id, quantity')
+        .eq('organization_id', organizationId)
+      if (currentStore?.id) query = query.eq('store_id', currentStore.id)
+      const { data } = await query
+      return (data as { product_id: string; quantity: number }[]) || []
+    },
+    enabled: !!organizationId,
+  })
+
+  const getProductStock = (productId: string): number =>
+    inventoryData?.find((inv) => inv.product_id === productId)?.quantity || 0
+
   const { data: customers } = useQuery({
     queryKey: ['customersSearch', organizationId, customerSearch],
     queryFn: async () => {
@@ -166,22 +215,22 @@ export function POSPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
-      let convertedTotal = 0
-      const convertedItems = await Promise.all(cart.map(async (item) => {
+      let total = 0
+      const items = await Promise.all(cart.map(async (item) => {
         const productCurrencyId = item.product.price_currency_id || defaultCurrencyId
         let unitPrice = item.product.price
-        if (activeCurrency && activeCurrency !== productCurrencyId) {
-          unitPrice = await convertPrice(organizationId!, item.product.price, productCurrencyId, activeCurrency)
+        if (paymentCurrencyId && paymentCurrencyId !== productCurrencyId) {
+          unitPrice = await convertPrice(organizationId!, item.product.price, productCurrencyId, paymentCurrencyId)
         }
         const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100
-        convertedTotal += lineTotal
+        total += lineTotal
         return {
-          invoice_id: '',
           product_id: item.product.id,
           product_name: item.product.name,
           sku: item.product.sku,
           quantity: item.quantity,
           unit_price: Math.round(unitPrice * 100) / 100,
+          cost: item.product.cost || 0,
           tax_rate: 0,
           tax_amount: 0,
           discount_amount: 0,
@@ -189,89 +238,45 @@ export function POSPage() {
         }
       }))
 
-      // Create invoice
-      const year = new Date().getFullYear()
-      const { count } = await supabase
-        .from('invoices')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organizationId)
-
-      const documentNumber = `POS-${year}-${String((count || 0) + 1).padStart(4, '0')}`
-
-      const { data: invoice, error } = await supabase
-        .from('invoices')
-        .insert({
-          organization_id: organizationId,
-          store_id: currentStore?.id,
-          customer_id: selectedCustomerId || null,
-          number: documentNumber,
-          status: 'confirmed',
-          payment_status: 'paid',
-          subtotal: convertedTotal,
-          tax_amount: 0,
-          discount_amount: 0,
-          total: convertedTotal,
-          paid_amount: convertedTotal,
-          currency_id: activeCurrency,
-        })
-        .select()
-        .single()
+      const { data: invoiceId, error } = await supabase.rpc('create_pos_sale', {
+        p_organization_id: organizationId,
+        p_user_id: userId,
+        p_store_id: currentStore?.id ?? null,
+        p_customer_id: selectedCustomerId || null,
+        p_cash_session_id: activeSession?.id ?? null,
+        p_payment_method: paymentMethod,
+        p_total: total,
+        p_currency_id: paymentCurrencyId || null,
+        p_items: items,
+        p_card_number: paymentMethod === 'card' ? paymentCardNumber || null : null,
+        p_customer_name: paymentMethod !== 'cash' ? paymentCustomerName || null : null,
+        p_identity_card: paymentMethod !== 'cash' ? paymentIdentityCard || null : null,
+        p_transfer_code: paymentMethod === 'transfer' ? paymentTransferCode || null : null,
+      })
 
       if (error) throw error
 
-      // Create invoice items
-      const items = convertedItems.map(i => ({ ...i, invoice_id: invoice.id }))
-
-      await supabase.from('invoice_items').insert(items)
-
-      // Record payment
-      await supabase.from('payments').insert({
-        invoice_id: invoice.id,
-        organization_id: organizationId!,
-        amount: convertedTotal,
-        payment_method: paymentMethod,
-        currency_id: invoice.currency_id,
-        exchange_rate: invoice.exchange_rate,
-        transaction_date: new Date().toISOString().split('T')[0],
-        created_by: userId,
-      })
-
-      // If cash payment, add to cash register
-      if (paymentMethod === 'cash' && activeSession) {
-        await supabase.from('cash_register_movements').insert({
-          session_id: activeSession.id,
-          type: 'sale',
-          payment_method: 'cash',
-          amount: convertedTotal,
-          user_id: userId,
-        })
-      }
-
-      // Create inventory movements for each item (SALE = decrease stock)
-      for (const item of cart) {
-        await createMovement(organizationId!, userId!, {
-          store_id: currentStore!.id,
-          product_id: item.product.id,
-          variant_id: undefined,
-          movement_type: 'SALE',
-          quantity: item.quantity,
-          cost: item.product.cost,
-          reference_type: 'invoice',
-          reference_id: invoice.id,
-          notes: `Venta POS`,
-        })
-      }
-
-      return invoice
+      return invoiceId as string
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['posInventory'] })
+      queryClient.invalidateQueries({ queryKey: ['posProducts'] })
       queryClient.invalidateQueries({ queryKey: ['cashMovements', activeSession?.id] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast({ title: 'Venta completada', description: 'La venta se ha registrado correctamente', variant: 'default' })
       setCart([])
       setShowCheckout(false)
       setSelectedCustomerId('')
       setCashReceived('')
+      setPaymentCardNumber('')
+      setPaymentCustomerName('')
+      setPaymentIdentityCard('')
+      setPaymentTransferCode('')
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -347,7 +352,8 @@ export function POSPage() {
     cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   , [cart])
 
-  const changeAmount = parseFloat(cashReceived || '0') - cartTotal
+  const displayTotal = convertedTotal || cartTotal
+  const changeAmount = parseFloat(cashReceived || '0') - displayTotal
 
   if (!activeSession) {
     return (
@@ -359,7 +365,7 @@ export function POSPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               Debes abrir una sesión de caja desde el módulo de Caja registradora antes de usar el POS.
             </p>
-            <Button className="mt-4" onClick={() => window.location.href = '/cash-register/sessions'}>
+            <Button className="mt-4" onClick={() => navigate('/cash-register/sessions')}>
               Ir a Caja
             </Button>
           </CardContent>
@@ -368,10 +374,38 @@ export function POSPage() {
     )
   }
 
+  const sessionUser = activeSession.user?.full_name
+  const sessionOpenedAt = new Date(activeSession.opened_at).toLocaleString('es-ES', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
-      {/* Products Grid */}
-      <div className="flex-1 rounded-lg border bg-card p-4 flex flex-col overflow-hidden">
+    <>
+      {/* Session Info Bar */}
+      <div className="bg-green-50 dark:bg-green-950/30 border-b border-green-200 dark:border-green-900 px-4 py-1.5 flex items-center justify-between text-xs text-green-700 dark:text-green-300">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1 font-medium">
+            <DollarSign className="h-3.5 w-3.5" />
+            Caja abierta
+          </span>
+          <span className="flex items-center gap-1">
+            <User className="h-3.5 w-3.5" />
+            {sessionUser || activeSession.user_id}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {sessionOpenedAt}
+          </span>
+        </div>
+        <span className="text-green-600 dark:text-green-400 font-medium">
+          {formatCurrencyAmounts(activeSession.opening_amounts)}
+        </span>
+      </div>
+
+      <div className="flex h-[calc(100vh-8rem)] gap-4">
+        {/* Products Grid */}
+        <div className="flex-1 rounded-lg border bg-card p-4 flex flex-col overflow-hidden">
         <div className="mb-4 flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -401,19 +435,32 @@ export function POSPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-4 content-start">
-            {products?.map((product: any) => (
+            {products?.map((product: any) => {
+              const stock = getProductStock(product.id)
+              const stockLow = stock > 0 && stock <= 5
+              const stockOut = stock === 0
+              return (
               <Card
                 key={product.id}
-                className="cursor-pointer p-3 hover:bg-muted/50 transition-colors"
-                onClick={() => addToCart(product)}
+                className={`cursor-pointer p-3 hover:bg-muted/50 transition-colors ${stockOut ? 'opacity-50' : ''}`}
+                onClick={() => { if (!stockOut) addToCart(product) }}
               >
-                <div className="aspect-square rounded-lg bg-muted flex items-center justify-center">
+                <div className="aspect-square rounded-lg bg-muted flex items-center justify-center relative">
                   <Package className="h-12 w-12 text-muted-foreground" />
+                  {stockOut && (
+                    <span className="absolute bottom-1 text-[10px] font-semibold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                      SIN STOCK
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2 text-sm font-medium truncate">{product.name}</p>
                 <p className="text-sm text-muted-foreground">${product.price.toFixed(2)}</p>
+                <p className={`text-xs mt-0.5 ${stockOut ? 'text-destructive' : stockLow ? 'text-amber-600' : 'text-green-600'}`}>
+                  Stock: {stock}
+                </p>
               </Card>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -426,14 +473,22 @@ export function POSPage() {
         </h3>
 
         <div className="flex-1 overflow-y-auto mt-4 space-y-2">
-          {cart.length === 0 ? (
+            {cart.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">El carrito está vacío</p>
           ) : (
-            cart.map((item) => (
-              <div key={item.product.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+            cart.map((item) => {
+              const stock = getProductStock(item.product.id)
+              const exceedsStock = stock > 0 && item.quantity > stock
+              return (
+              <div key={item.product.id} className={`flex items-center gap-2 p-2 rounded-lg ${exceedsStock ? 'bg-amber-50 border border-amber-200' : 'bg-muted/50'}`}>
                 <div className="flex-1">
                   <p className="font-medium text-sm">{item.product.name}</p>
-                  <p className="text-xs text-muted-foreground">${item.product.price.toFixed(2)} c/u</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">${item.product.price.toFixed(2)} c/u</p>
+                    {exceedsStock && (
+                      <span className="text-[10px] font-medium text-amber-700">¡Stock insuficiente!</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.product.id, -1)}>
@@ -448,7 +503,8 @@ export function POSPage() {
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-            ))
+            )
+            })
           )}
         </div>
 
@@ -489,7 +545,10 @@ export function POSPage() {
       </div>
 
       {/* Checkout Dialog */}
-      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+      <Dialog open={showCheckout} onOpenChange={(open) => {
+        setShowCheckout(open)
+        if (!open) { setPaymentCardNumber(''); setPaymentCustomerName(''); setPaymentIdentityCard(''); setPaymentTransferCode('') }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Finalizar Venta</DialogTitle>
@@ -497,7 +556,30 @@ export function POSPage() {
           <div className="space-y-4">
             <div className="flex justify-between text-xl font-bold">
               <span>Total a pagar</span>
-              <span>${cartTotal.toFixed(2)}</span>
+              <span className="flex items-center gap-2">
+                {convertingTotal && <Loader2 className="h-4 w-4 animate-spin" />}
+                {paymentCurrency?.symbol || '$'}{displayTotal.toFixed(2)}
+                <span className="text-sm font-normal text-muted-foreground">{paymentCurrency?.code || ''}</span>
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Moneda de pago</Label>
+              <Select
+                value={paymentCurrencyId || '_default'}
+                onValueChange={(v) => setPaymentCurrencyId(v === '_default' ? defaultCurrencyId : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar moneda" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies?.map((cur) => (
+                    <SelectItem key={cur.id} value={cur.id}>
+                      {cur.code}{cur.symbol ? ` (${cur.symbol})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -527,7 +609,10 @@ export function POSPage() {
 
             <div className="space-y-2">
               <Label>Método de pago</Label>
-              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'card' | 'transfer') => setPaymentMethod(v)}>
+              <Select value={paymentMethod} onValueChange={(v: 'cash' | 'card' | 'transfer') => {
+                setPaymentMethod(v)
+                if (v === 'cash') { setPaymentCardNumber(''); setPaymentTransferCode('') }
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -551,9 +636,68 @@ export function POSPage() {
                 />
                 {changeAmount > 0 && (
                   <div className="text-green-600 font-medium">
-                    Cambio: ${changeAmount.toFixed(2)}
+                    Cambio: {paymentCurrency?.symbol || '$'}{changeAmount.toFixed(2)} {paymentCurrency?.code || ''}
                   </div>
                 )}
+              </div>
+            )}
+
+            {paymentMethod === 'card' && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Número de tarjeta receptora</Label>
+                  <Input
+                    value={paymentCardNumber}
+                    onChange={(e) => setPaymentCardNumber(e.target.value)}
+                    placeholder="Últimos 4 dígitos"
+                    maxLength={4}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre completo del cliente</Label>
+                  <Input
+                    value={paymentCustomerName}
+                    onChange={(e) => setPaymentCustomerName(e.target.value)}
+                    placeholder="Nombre y apellidos"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carnet de identidad</Label>
+                  <Input
+                    value={paymentIdentityCard}
+                    onChange={(e) => setPaymentIdentityCard(e.target.value)}
+                    placeholder="Número de carnet"
+                  />
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'transfer' && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Código de transferencia</Label>
+                  <Input
+                    value={paymentTransferCode}
+                    onChange={(e) => setPaymentTransferCode(e.target.value)}
+                    placeholder="Número de referencia"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre completo del cliente</Label>
+                  <Input
+                    value={paymentCustomerName}
+                    onChange={(e) => setPaymentCustomerName(e.target.value)}
+                    placeholder="Nombre y apellidos"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carnet de identidad</Label>
+                  <Input
+                    value={paymentIdentityCard}
+                    onChange={(e) => setPaymentIdentityCard(e.target.value)}
+                    placeholder="Número de carnet"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -612,6 +756,7 @@ export function POSPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   )
 }

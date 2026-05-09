@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Edit, Trash2, Package } from 'lucide-react'
+import { Edit, Trash2, Package, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import type { Product } from '@/api/products'
 import { PERMISSIONS, usePermissions } from '@/hooks/usePermissions'
 import { useDefaultCurrency } from '@/hooks/useDefaultCurrency'
@@ -43,9 +44,17 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             {product.barcode && (
               <p className="text-xs text-muted-foreground mt-0.5">{product.barcode}</p>
             )}
-            {product.category?.name && (
-              <p className="text-sm text-muted-foreground mt-1">{product.category.name}</p>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              {product.category?.name && (
+                <p className="text-sm text-muted-foreground">{product.category.name}</p>
+              )}
+              {product.is_consignment && (
+                <Badge variant="outline" className="text-xs gap-1 h-5">
+                  <ClipboardList className="h-3 w-3" />
+                  Consignación
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {hasPermission(PERMISSIONS.PRODUCT_EDIT) && (

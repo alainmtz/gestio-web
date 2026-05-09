@@ -23,4 +23,5 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
   exchange_rate_change: { icon: ArrowLeftRight, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/40', label: 'Tasa de cambio' },
   member_joined: { icon: Users, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-100 dark:bg-violet-900/40', label: 'Nuevo miembro' },
   organization_invitation: { icon: Mail, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/40', label: 'Invitación' },
+  warranty_expiration: { icon: Calendar, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/40', label: 'Garantía' },
 }

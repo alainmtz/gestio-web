@@ -39,6 +39,7 @@ interface AuthState {
   permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
+  isSwitchingOrganization: boolean
 }
 
 interface AuthActions {
@@ -53,6 +54,7 @@ interface AuthActions {
   login: (user: User, session: { accessToken: string; expiresAt: number }, organizations: Organization[]) => void
   logout: () => void
   setLoading: (loading: boolean) => void
+  setSwitchingOrganization: (switching: boolean) => void
 }
 
 export const useAuthStore = create<AuthState & AuthActions>()(
@@ -68,6 +70,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       permissions: [],
       isAuthenticated: false,
       isLoading: false,
+      isSwitchingOrganization: false,
 
       setUser: (user) => set({ user }),
       setSession: (session) => set({ session }),
@@ -105,6 +108,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
       
       setLoading: (loading) => set({ isLoading: loading }),
+      setSwitchingOrganization: (switching) => set({ isSwitchingOrganization: switching }),
     }),
     {
       name: 'gestio-auth',

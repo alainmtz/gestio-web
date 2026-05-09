@@ -37,6 +37,7 @@ export function useCreateProduct() {
       productsApi.createProduct(organizationId!, userId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
@@ -50,6 +51,7 @@ export function useUpdateProduct() {
     onSuccess: (updated) => {
       queryClient.setQueryData(['product', updated.id], updated)
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
@@ -61,6 +63,7 @@ export function useDeleteProduct() {
     mutationFn: (id: string) => productsApi.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
 }
@@ -117,6 +120,8 @@ export function useCreateMovement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['movements'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['inventoryReport'] })
     },
   })
 }
@@ -131,6 +136,7 @@ export function useUpdateMovement() {
       queryClient.invalidateQueries({ queryKey: ['movements'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['inventoryReport'] })
       if (input.store_id !== undefined) {
         queryClient.invalidateQueries({ queryKey: ['stores'] })
       }

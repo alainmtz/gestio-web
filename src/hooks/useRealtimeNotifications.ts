@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { createNotifications } from '@/api/notifications'
+import { useQueryClient } from '@tanstack/react-query'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 const LOW_STOCK_THRESHOLD = 5
@@ -15,6 +16,7 @@ export function useRealtimeNotifications() {
   const channelsRef = useRef<RealtimeChannel[]>([])
 
   const isAdmin = ['OWNER', 'ADMIN', 'ORG_OWNER', 'ORG_ADMIN'].includes(userRole?.toUpperCase())
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!organizationId || !userId) return
@@ -30,6 +32,10 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['inventory'] })
+          queryClient.invalidateQueries({ queryKey: ['movements'] })
+          queryClient.invalidateQueries({ queryKey: ['products'] })
+
           const row = payload.new as { available: number; product_id: string; store_id?: string }
           if (row.available <= LOW_STOCK_THRESHOLD && row.available >= 0) {
             const { data: product } = await supabase
@@ -77,6 +83,10 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] })
+          queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+          queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+
           const row = payload.new as { id: string; number: string; total: number; customer_id?: string; status?: string }
           const { data: customer } = row.customer_id
             ? await supabase.from('customers').select('name').eq('id', row.customer_id).maybeSingle()
@@ -112,6 +122,11 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] })
+          queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+          queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+          queryClient.invalidateQueries({ queryKey: ['invoice', (payload.new as any)?.id] })
+
           const newRow = payload.new as { id: string; number: string; payment_status: string; customer_id?: string; total?: number }
           const oldRow = payload.old as { payment_status: string }
           if (newRow.payment_status === 'paid' && oldRow.payment_status !== 'paid') {
@@ -154,6 +169,8 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['consignments'] })
+
           const row = payload.new as { id: string; partner_id: string; total_items?: number }
           const { data: partner } = row.partner_id
             ? await supabase.from('customers').select('name').eq('id', row.partner_id).maybeSingle()
@@ -193,6 +210,8 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['offers'] })
+
           const row = payload.new as { id: string; number?: string; customer_id?: string; total?: number; status?: string }
           const { data: customer } = row.customer_id
             ? await supabase.from('customers').select('name').eq('id', row.customer_id).maybeSingle()
@@ -233,6 +252,8 @@ export function useRealtimeNotifications() {
           filter: `organization_id=eq.${organizationId}`,
         },
         async (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['exchangeRates'] })
+
           const row = payload.new as { id?: string; base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
           const oldRow = payload.old as { base_currency_id: string; target_currency_id: string; rate: number; source?: string; date?: string; created_at?: string } | null
           const eventType = payload.eventType

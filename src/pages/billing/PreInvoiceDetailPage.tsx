@@ -131,7 +131,7 @@ export function PreInvoiceDetailPage() {
       currency_id: '',
       notes: '',
       items: [
-        { product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 },
+        { product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined },
       ],
     },
   })
@@ -283,7 +283,9 @@ export function PreInvoiceDetailPage() {
           tax_rate: item.tax_rate,
           discount_percentage: item.discount_percentage,
           available_stock: 0,
-        })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
+          warranty_duration: item.warranty_duration,
+          warranty_period: item.warranty_period,
+        })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined }],
       })
     }
   }, [isEditing, preInvoice, reset, defaultCurrencyId])
@@ -374,7 +376,8 @@ export function PreInvoiceDetailPage() {
                     const hasProduct = !!items?.[index]?.product_id
 
                     return (
-                      <div key={field.id} className="flex gap-2 items-start border p-2 rounded">
+                      <div key={field.id} className="border p-2 rounded space-y-2">
+                        <div className="flex gap-2 items-start">
                         <div className="flex-1">
                           <Popover
                             open={openProductPopover === index}
@@ -508,6 +511,29 @@ export function PreInvoiceDetailPage() {
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
+                      <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
+                          className="w-16 text-center"
+                          placeholder="0"
+                        />
+                        <Select
+                          value={items?.[index]?.warranty_period || ''}
+                          onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="days">Días</SelectItem>
+                            <SelectItem value="months">Meses</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     )
                   })}
                 </div>
@@ -532,6 +558,8 @@ export function PreInvoiceDetailPage() {
                         tax_rate: 0,
                         discount_percentage: 0,
                         available_stock: 0,
+                        warranty_duration: undefined,
+                        warranty_period: undefined,
                       })
                     }
                   >
@@ -683,7 +711,8 @@ export function PreInvoiceDetailPage() {
                         getProductStock(items?.[index]?.product_id || '')
                       const hasProduct = !!items?.[index]?.product_id
                       return (
-                        <div key={field.id} className="flex gap-2 items-start border p-2 rounded">
+                        <div key={field.id} className="border p-2 rounded space-y-2">
+                          <div className="flex gap-2 items-start">
                           <div className="flex-1">
                             <Popover
                               open={openProductPopover === index}
@@ -763,11 +792,34 @@ export function PreInvoiceDetailPage() {
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
+                        <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
+                            className="w-16 text-center"
+                            placeholder="0"
+                          />
+                          <Select
+                            value={items?.[index]?.warranty_period || ''}
+                            onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="-" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="days">Días</SelectItem>
+                              <SelectItem value="months">Meses</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       )
                     })}
                   </div>
                   <div className="flex justify-between items-center mt-4">
-                    <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 })}>
+                    <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
                       <Plus className="mr-2 h-4 w-4" />
                       Agregar Item
                     </Button>
@@ -919,6 +971,11 @@ export function PreInvoiceDetailPage() {
                       <tr key={item.id || index}>
                         <td className="px-4 py-3">
                           <div>{item.description}</div>
+                          {(item.warranty_duration && item.warranty_period) && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">{item.quantity}</td>
                         <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>

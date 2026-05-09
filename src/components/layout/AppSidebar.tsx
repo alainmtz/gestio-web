@@ -129,10 +129,10 @@ function NavMenu({ items }: { items: NavItem[] }) {
             {item.submenu ? (
               <>
                 <SidebarMenuButton asChild isActive={isActive}>
-                  <a href={item.href}>
+                  <Link to={item.href}>
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 <SidebarMenuSub>
                   {item.submenu.map((subItem) => (

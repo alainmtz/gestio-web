@@ -1,7 +1,18 @@
 import { supabase } from '@/lib/supabase'
 import { createMovement } from './products'
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function calcWarrantyEndDate(warrantyDuration?: number, warrantyPeriod?: string): string | undefined {
+  if (!warrantyDuration || !warrantyPeriod) return undefined
+  const date = new Date()
+  if (warrantyPeriod === 'days') {
+    date.setDate(date.getDate() + warrantyDuration)
+  } else if (warrantyPeriod === 'months') {
+    date.setMonth(date.getMonth() + warrantyDuration)
+  }
+  return date.toISOString().split('T')[0]
+}
+
 function calcItemTotals(item: {
   quantity: number
   unit_price: number
@@ -122,6 +133,8 @@ export interface OfferItem {
   subtotal: number
   tax_amount: number
   total: number
+  warranty_duration?: number
+  warranty_period?: 'days' | 'months'
 }
 
 export interface Offer {
@@ -162,6 +175,8 @@ export interface CreateOfferInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -180,6 +195,8 @@ export interface PreInvoiceItem {
   subtotal: number
   tax_amount: number
   total: number
+  warranty_duration?: number
+  warranty_period?: 'days' | 'months'
 }
 
 export interface PreInvoice {
@@ -220,6 +237,8 @@ export interface CreatePreInvoiceInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -237,6 +256,9 @@ export interface InvoiceItem {
   subtotal: number
   tax_amount: number
   total: number
+  warranty_duration?: number
+  warranty_period?: 'days' | 'months'
+  warranty_end_date?: string
 }
 
 export interface InvoicePayment {
@@ -298,6 +320,8 @@ export interface CreateInvoiceInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -360,6 +384,8 @@ export async function createOffer(organizationId: string, userId: string, input:
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
     }
   })
 
@@ -461,6 +487,9 @@ export async function createInvoice(organizationId: string, userId: string, inpu
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
+      warranty_end_date: calcWarrantyEndDate(item.warranty_duration, item.warranty_period),
     }
   })
 
@@ -625,6 +654,8 @@ export async function createPreInvoice(organizationId: string, userId: string, i
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
     }
   })
 
@@ -685,6 +716,8 @@ export interface UpdateOfferInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -713,6 +746,8 @@ export async function updateOffer(offerId: string, input: UpdateOfferInput): Pro
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
     }
   })
 
@@ -755,6 +790,8 @@ export interface UpdatePreInvoiceInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -787,6 +824,8 @@ export async function updatePreInvoice(preInvoiceId: string, input: UpdatePreInv
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
     }
   })
 
@@ -842,6 +881,8 @@ export interface UpdateInvoiceInput {
     unit_price: number
     tax_rate?: number
     discount_percentage?: number
+    warranty_duration?: number
+    warranty_period?: 'days' | 'months'
   }[]
 }
 
@@ -869,6 +910,9 @@ export async function updateInvoice(invoiceId: string, organizationId: string, u
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || null,
+      warranty_period: item.warranty_period || null,
+      warranty_end_date: calcWarrantyEndDate(item.warranty_duration, item.warranty_period),
     }
   })
 
@@ -895,7 +939,28 @@ export async function updateInvoice(invoiceId: string, organizationId: string, u
   }
 }
 
-export async function cancelInvoice(invoiceId: string): Promise<void> {
+export async function cancelInvoice(invoiceId: string, userId?: string): Promise<void> {
+  const invoice = await getInvoice(invoiceId)
+  if (!invoice) throw new Error('Invoice not found')
+  if (invoice.status === 'cancelled') return
+
+  if (invoice.items && userId) {
+    for (const item of invoice.items) {
+      if (item.product_id && item.quantity > 0) {
+        await createMovement(invoice.organization_id, userId, {
+          store_id: invoice.store_id,
+          product_id: item.product_id,
+          movement_type: 'RETURN',
+          quantity: item.quantity,
+          cost: item.unit_price,
+          reference_type: 'invoice',
+          reference_id: invoice.id,
+          notes: `Devolución por cancelación de factura ${invoice.number}`,
+        })
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('invoices')
     .update({ status: 'cancelled' })
@@ -948,6 +1013,8 @@ export async function convertOfferToPreInvoice(offerId: string, organizationId: 
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || undefined,
+      warranty_period: item.warranty_period || undefined,
     })
   }
 
@@ -1025,6 +1092,9 @@ export async function convertOfferToInvoice(offerId: string, organizationId: str
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || undefined,
+      warranty_period: item.warranty_period || undefined,
+      warranty_end_date: calcWarrantyEndDate(item.warranty_duration, item.warranty_period),
     })
   }
 
@@ -1120,6 +1190,9 @@ export async function convertPreInvoiceToInvoice(preInvoiceId: string, organizat
       subtotal: c.subtotal,
       tax_amount: c.taxAmount,
       total: c.total,
+      warranty_duration: item.warranty_duration || undefined,
+      warranty_period: item.warranty_period || undefined,
+      warranty_end_date: calcWarrantyEndDate(item.warranty_duration, item.warranty_period),
     })
   }
 

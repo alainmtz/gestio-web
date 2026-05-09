@@ -22,6 +22,7 @@ export interface Product {
   image_url?: string
   is_active: boolean
   has_variants: boolean
+  is_consignment?: boolean
   created_by?: string
   created_at: string
   updated_at: string
@@ -356,6 +357,13 @@ export async function createMovement(
     .eq('id', movementData)
     .single()
 
+  if (movement_type === 'CONSIGNMENT_IN') {
+    await supabase
+      .from('products')
+      .update({ is_consignment: true })
+      .eq('id', product_id)
+  }
+
   return createdMovement
 }
 
@@ -371,19 +379,98 @@ export interface UpdateMovementInput {
   organizationId?: string
 }
 
+async function resolveOrgForMovement(
+  movementId: string,
+  productId: string,
+  inputOrgId?: string
+): Promise<string> {
+  if (inputOrgId) return inputOrgId
+  const { data: m } = await supabase.from('inventory_movements').select('organization_id').eq('id', movementId).single()
+  if (m?.organization_id) return m.organization_id
+  const { data: p } = await supabase.from('products').select('organization_id').eq('id', productId).single()
+  if (p?.organization_id) return p.organization_id
+  throw new Error('Cannot resolve organization_id for movement update')
+}
+
+async function getEffectiveStock(orgId: string, productId: string, storeId: string, variantId: string | null): Promise<number> {
+  const { data: rows } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('organization_id', orgId)
+    .eq('product_id', productId)
+    .eq('store_id', storeId)
+    .eq('variant_id', variantId)
+  return (rows ?? []).reduce((sum, r) => sum + Number(r.quantity), 0)
+}
+
+async function upsertInventoryDelta(
+  orgId: string, productId: string, storeId: string, variantId: string | null, delta: number
+): Promise<void> {
+  const currentStock = await getEffectiveStock(orgId, productId, storeId, variantId)
+  const newQty = currentStock + delta
+  if (newQty < 0) {
+    throw new Error(`Stock insuficiente. Stock actual: ${currentStock}, intento: ${delta}`)
+  }
+
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('product_id', productId)
+    .eq('store_id', storeId)
+    .eq('variant_id', variantId)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase
+      .from('inventory')
+      .update({ quantity: newQty, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase
+      .from('inventory')
+      .insert({ organization_id: orgId, product_id: productId, store_id: storeId, variant_id: variantId, quantity: newQty })
+    if (error) throw error
+  }
+}
+
+const OUTPUT_TYPES = new Set(['SALE', 'TRANSFER_OUT', 'DAMAGE', 'CONSIGNMENT_OUT'])
+
+function computeStockDelta(movementType: string, quantity: number): number {
+  return OUTPUT_TYPES.has(movementType) ? -quantity : quantity
+}
+
 export async function updateMovement(
   id: string,
   input: UpdateMovementInput
 ): Promise<void> {
-  // Fetch current movement for delta/audit
   const { data: current, error: fetchError } = await supabase
     .from('inventory_movements')
-    .select('quantity, product_id, store_id, movement_type, cost, notes, reference_type, reference_id')
+    .select('id, quantity, product_id, store_id, movement_type, cost, notes, reference_type, reference_id, variant_id')
     .eq('id', id)
     .single()
   if (fetchError) throw fetchError
 
   const storeChanged = input.store_id !== undefined && input.store_id !== current.store_id
+  const effectiveStoreId = storeChanged ? input.store_id! : current.store_id
+  const effectiveQty = input.quantity ?? current.quantity
+  const effectiveType = input.movement_type ?? current.movement_type
+  const variantId = current.variant_id ?? null
+  const orgId = await resolveOrgForMovement(id, current.product_id, input.organizationId)
+
+  if (input.quantity !== undefined || storeChanged) {
+    if (storeChanged) {
+      const oldDelta = -computeStockDelta(current.movement_type, current.quantity)
+      await upsertInventoryDelta(orgId, current.product_id, current.store_id, variantId, oldDelta)
+      const newDelta = computeStockDelta(effectiveType, effectiveQty)
+      await upsertInventoryDelta(orgId, current.product_id, effectiveStoreId, variantId, newDelta)
+    } else if (input.quantity !== undefined && input.quantity !== current.quantity) {
+      const oldDelta = computeStockDelta(current.movement_type, current.quantity)
+      const newDelta = computeStockDelta(effectiveType, effectiveQty)
+      await upsertInventoryDelta(orgId, current.product_id, current.store_id, variantId, newDelta - oldDelta)
+    }
+  }
 
   const { error: updateError } = await supabase
     .from('inventory_movements')
@@ -399,76 +486,6 @@ export async function updateMovement(
     .eq('id', id)
   if (updateError) throw updateError
 
-  const effectiveStoreId = storeChanged ? input.store_id! : current.store_id
-
-  // Adjust inventory when quantity or store changes
-  if (input.quantity !== undefined || storeChanged) {
-    const newQty = input.quantity !== undefined ? input.quantity : current.quantity
-
-    if (storeChanged) {
-      // Remove quantity from old store inventory
-      const { data: oldInv } = await supabase
-        .from('inventory')
-        .select('id, quantity')
-        .eq('product_id', current.product_id)
-        .eq('store_id', current.store_id)
-        .maybeSingle()
-      if (oldInv) {
-        await supabase
-          .from('inventory')
-          .update({ quantity: Math.max(0, oldInv.quantity - current.quantity) })
-          .eq('id', oldInv.id)
-      }
-
-      // Add quantity to new store inventory (upsert)
-      const { data: newInv } = await supabase
-        .from('inventory')
-        .select('id, quantity')
-        .eq('product_id', current.product_id)
-        .eq('store_id', effectiveStoreId)
-        .maybeSingle()
-      if (newInv) {
-        await supabase
-          .from('inventory')
-          .update({ quantity: newInv.quantity + newQty })
-          .eq('id', newInv.id)
-      } else {
-        // Get organization_id from product if not provided
-        let orgId = input.organizationId
-        if (!orgId) {
-          const { data: prod } = await supabase
-            .from('products')
-            .select('organization_id')
-            .eq('id', current.product_id)
-            .single()
-          orgId = prod?.organization_id
-        }
-        await supabase.from('inventory').insert({
-          product_id: current.product_id,
-          store_id: effectiveStoreId,
-          organization_id: orgId,
-          quantity: newQty,
-        })
-      }
-    } else if (input.quantity !== undefined && input.quantity !== current.quantity) {
-      // Only quantity changed, same store
-      const delta = input.quantity - current.quantity
-      const { data: inv } = await supabase
-        .from('inventory')
-        .select('id, quantity')
-        .eq('product_id', current.product_id)
-        .eq('store_id', current.store_id)
-        .maybeSingle()
-      if (inv) {
-        await supabase
-          .from('inventory')
-          .update({ quantity: inv.quantity + delta })
-          .eq('id', inv.id)
-      }
-    }
-  }
-
-  // Audit log
   if (input.userId) {
     const oldData = {
       store_id: current.store_id,
@@ -481,15 +498,15 @@ export async function updateMovement(
     }
     const newData = {
       store_id: effectiveStoreId,
-      movement_type: input.movement_type ?? current.movement_type,
-      quantity: input.quantity ?? current.quantity,
+      movement_type: effectiveType,
+      quantity: effectiveQty,
       cost: input.cost ?? current.cost,
       notes: input.notes ?? current.notes,
       reference_type: input.reference_type ?? current.reference_type,
       reference_id: input.reference_id ?? current.reference_id,
     }
     await supabase.from('audit_logs').insert({
-      organization_id: input.organizationId ?? null,
+      organization_id: orgId,
       user_id: input.userId,
       table_name: 'inventory_movements',
       record_id: id,

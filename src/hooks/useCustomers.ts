@@ -35,6 +35,7 @@ export function useCreateCustomer() {
       customersApi.createCustomer(organizationId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
     },
   })
 }
@@ -48,6 +49,7 @@ export function useUpdateCustomer() {
     onSuccess: (updated) => {
       queryClient.setQueryData(['customer', updated.id], updated)
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
     },
   })
 }
@@ -59,6 +61,7 @@ export function useDeleteCustomer() {
     mutationFn: (id: string) => customersApi.deleteCustomer(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
     },
   })
 }

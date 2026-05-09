@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Save, Loader2, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Trash2, Plus, ClipboardList } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { productSchema, type ProductFormData } from '@/schemas'
 import { getProduct, createProduct, updateProduct, deleteProduct, getCategories, type Product } from '@/api/products'
 import { useAuthStore } from '@/stores/authStore'
@@ -188,9 +189,17 @@ export function ProductDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {isNew ? 'Nuevo Producto' : 'Editar Producto'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight">
+                {isNew ? 'Nuevo Producto' : 'Editar Producto'}
+              </h1>
+              {!isNew && product?.is_consignment && (
+                <Badge variant="outline" className="text-xs gap-1 h-6">
+                  <ClipboardList className="h-3 w-3" />
+                  Consignación
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground">
               {isNew ? 'Crea un nuevo producto en tu inventario' : 'Edita los detalles del producto'}
             </p>

@@ -126,7 +126,7 @@ export function InvoiceDetailPage() {
       currency_id: '',
       due_date: '',
       notes: '',
-      items: [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
+      items: [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined }],
     },
   })
 
@@ -154,6 +154,8 @@ export function InvoiceDetailPage() {
           tax_rate: item.tax_rate,
           discount_percentage: item.discount_percentage,
           available_stock: 0,
+          warranty_duration: item.warranty_duration,
+          warranty_period: item.warranty_period,
         })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
@@ -551,12 +553,34 @@ export function InvoiceDetailPage() {
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
+                <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
+                    className="w-16 text-center"
+                    placeholder="0"
+                  />
+                  <Select
+                    value={items?.[index]?.warranty_period || ''}
+                    onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="days">Días</SelectItem>
+                      <SelectItem value="months">Meses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )
           })}
         </div>
         <div className="flex justify-between items-center mt-4">
-          <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
             <Plus className="mr-2 h-4 w-4" />
             Agregar Item
           </Button>
@@ -749,7 +773,15 @@ export function InvoiceDetailPage() {
                 <tbody className="divide-y">
                   {invoice?.items?.map((item, index) => (
                     <tr key={item.id || index}>
-                      <td className="px-4 py-3">{item.description}</td>
+                      <td className="px-4 py-3">
+                        <div>{item.description}</div>
+                        {(item.warranty_duration && item.warranty_period) && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}
+                            {item.warranty_end_date && ` (hasta ${new Date(item.warranty_end_date).toLocaleDateString('es-ES')})`}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right">{item.quantity}</td>
                       <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right">${item.total.toFixed(2)}</td>

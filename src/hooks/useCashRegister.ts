@@ -80,6 +80,9 @@ export function useCloseSession(sessionId: string) {
       queryClient.invalidateQueries({
         queryKey: cashKeys.activeSession(organizationId!, userId!),
       })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -137,6 +140,9 @@ export function useAddMovement(registerId: string) {
       cashApi.addMovement({ ...input, register_id: registerId, user_id: userId! }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cashKeys.movements(registerId) })
+      queryClient.invalidateQueries({ queryKey: ['financialReport'] })
+      queryClient.invalidateQueries({ queryKey: ['salesReport'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

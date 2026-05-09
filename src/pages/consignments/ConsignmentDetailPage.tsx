@@ -25,6 +25,7 @@ import { ArrowLeft, Loader2, ShoppingCart, Undo, DollarSign, FileText } from 'lu
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
+import { createMovement } from '@/api/products'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
 interface ConsignmentStockRow {
@@ -83,6 +84,7 @@ export function ConsignmentDetailPage() {
   const [showReturnDialog, setShowReturnDialog] = useState(false)
   const [returnQuantity, setReturnQuantity] = useState('')
   const [showLiquidateDialog, setShowLiquidateDialog] = useState(false)
+  const [liquidatePurchaseQty, setLiquidatePurchaseQty] = useState(0)
 
   const { data: row, isLoading } = useQuery({
     queryKey: ['consignment_stock', id],
@@ -149,6 +151,9 @@ export function ConsignmentDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
       queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
       toast({ title: 'Venta registrada', variant: 'default' })
       setShowSaleDialog(false)
       setSaleQuantity('')
@@ -183,11 +188,29 @@ export function ConsignmentDetailPage() {
         quantity: qty,
         user_id: useAuthStore.getState().user?.id,
       })
+
+      const currentUserId = useAuthStore.getState().user?.id
+      if (currentUserId) {
+        try {
+          await createMovement(row!.organization_id, currentUserId, {
+            product_id: row!.product_id,
+            store_id: row!.store_id,
+            movement_type: 'RETURN',
+            quantity: qty,
+            notes: 'Devolución de consignación',
+          })
+        } catch {
+          console.warn('return registered but inventory sync failed')
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
       queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
       toast({ title: 'Devolución registrada', variant: 'default' })
       setShowReturnDialog(false)
       setReturnQuantity('')
@@ -206,14 +229,57 @@ export function ConsignmentDetailPage() {
       const returned = row.quantity_returned || 0
       const pending = total - sold - returned
 
+      const currentUserId = useAuthStore.getState().user?.id
+
       if (pending > 0) {
-        // Auto-return pending items
-        const newReturned = returned + pending
-        const { error: updateError } = await supabase
-          .from('consignment_stock')
-          .update({ quantity_returned: newReturned, status: 'LIQUIDATED' })
-          .eq('id', id)
-        if (updateError) throw updateError
+        const isSupplier = row.partner_type === 'SUPPLIER'
+        const toPurchase = isSupplier ? Math.min(liquidatePurchaseQty, pending) : 0
+        const toReturn = pending - toPurchase
+        const newReturned = returned + toReturn
+
+        if (toReturn > 0) {
+          const { error: updateError } = await supabase
+            .from('consignment_stock')
+            .update({ quantity_returned: newReturned, status: 'LIQUIDATED' })
+            .eq('id', id)
+          if (updateError) throw updateError
+
+          if (currentUserId) {
+            try {
+              await createMovement(row.organization_id, currentUserId, {
+                product_id: row.product_id,
+                store_id: row.store_id,
+                movement_type: 'RETURN',
+                quantity: toReturn,
+                notes: 'Devolución por liquidación de consignación',
+              })
+            } catch {
+              console.warn('liquidation return inventory sync failed')
+            }
+          }
+        } else {
+          const { error } = await supabase
+            .from('consignment_stock')
+            .update({ status: 'LIQUIDATED' })
+            .eq('id', id)
+          if (error) throw error
+        }
+
+        if (toPurchase > 0 && currentUserId) {
+          try {
+            await createMovement(row.organization_id, currentUserId, {
+              product_id: row.product_id,
+              store_id: row.store_id,
+              movement_type: 'CONSIGNMENT_IN',
+              quantity: toPurchase,
+              reference_type: 'consignment',
+              reference_id: id,
+              notes: 'Compra de stock pendiente por liquidación',
+            })
+          } catch {
+            console.warn('consignment_in purchase failed during liquidation')
+          }
+        }
       } else {
         const { error } = await supabase
           .from('consignment_stock')
@@ -228,13 +294,32 @@ export function ConsignmentDetailPage() {
         type: 'LIQUIDATION',
         product_id: row.product_id,
         quantity: sold,
-        user_id: useAuthStore.getState().user?.id,
+        user_id: currentUserId,
       })
+
+      if (currentUserId && row.partner_type === 'SUPPLIER' && sold > 0) {
+        try {
+          await createMovement(row.organization_id, currentUserId, {
+            product_id: row.product_id,
+            store_id: row.store_id,
+            movement_type: 'CONSIGNMENT_IN',
+            quantity: sold,
+            reference_type: 'consignment',
+            reference_id: id,
+            notes: 'Reconocimiento de stock por liquidación de consignación',
+          })
+        } catch {
+          console.warn('consignment_in movement failed during liquidation')
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consignment_stock', id] })
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
       queryClient.invalidateQueries({ queryKey: ['consignment_movements', id] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
       toast({ title: 'Consignación liquidada', variant: 'default' })
       setShowLiquidateDialog(false)
     },
@@ -495,29 +580,59 @@ export function ConsignmentDetailPage() {
       </Dialog>
 
       {/* Liquidate Dialog */}
-      <Dialog open={showLiquidateDialog} onOpenChange={setShowLiquidateDialog}>
+      <Dialog open={showLiquidateDialog} onOpenChange={(open) => {
+        setShowLiquidateDialog(open)
+        if (open) setLiquidatePurchaseQty(0)
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Liquidar Consignación</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Esta acción liquidará la consignación y registrará un movimiento de liquidación.
+              Esta acción finalizará la consignación. Los artículos no vendidos pueden devolverse al socio o comprarse para la tienda.
             </p>
             <div className="rounded-lg border p-4 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Total vendido:</span>
-                <span className="font-medium">{row.quantity_sold} uds</span>
+                <span>Total enviado:</span>
+                <span className="font-medium">{row.quantity_sent} uds</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Vendido:</span>
+                <span className="font-medium text-green-600">{row.quantity_sold} uds</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Devuelto:</span>
+                <span className="font-medium text-orange-600">{row.quantity_returned} uds</span>
               </div>
               <div className="flex justify-between">
                 <span>Comisión:</span>
                 <span className="font-medium">{row.commission_rate}%</span>
               </div>
               {available > 0 && (
-                <div className="flex justify-between text-orange-600">
-                  <span>Pendiente de retorno:</span>
-                  <span className="font-medium">{available} uds (auto-retornados)</span>
-                </div>
+                <>
+                  <div className="border-t pt-2 flex justify-between text-amber-600 font-medium">
+                    <span>Pendiente:</span>
+                    <span>{available} uds</span>
+                  </div>
+                  {row.partner_type === 'SUPPLIER' && (
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label className="text-xs">Comprar para la tienda (resto se devuelve)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={available}
+                        value={liquidatePurchaseQty}
+                        onChange={(e) => setLiquidatePurchaseQty(Math.min(parseInt(e.target.value) || 0, available))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {liquidatePurchaseQty > 0
+                          ? `${liquidatePurchaseQty} uds → inventario · ${available - liquidatePurchaseQty} uds → devolución`
+                          : 'Todas las unidades pendientes se devolverán'}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

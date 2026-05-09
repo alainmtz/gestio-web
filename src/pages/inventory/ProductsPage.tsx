@@ -30,7 +30,6 @@ import { useToast } from '@/lib/toast'
 import type { CreateProductInput } from '@/api/products'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
-import { useAuthStore } from '@/stores/authStore'
 
 export function ProductsPage() {
   const [search, setSearch] = useState('')

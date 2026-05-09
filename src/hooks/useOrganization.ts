@@ -62,9 +62,12 @@ export function useOrganization() {
   }, [currentOrganization?.id, user?.id])
 
   const handleSelectOrganization = async (org: Organization) => {
+    useAuthStore.getState().setSwitchingOrganization(true)
     selectOrganization(org)
     selectStore(null)
     queryClient.clear()
+    // Give queries time to start fetching before removing the loading overlay
+    setTimeout(() => useAuthStore.getState().setSwitchingOrganization(false), 600)
   }
 
   return {

@@ -13,6 +13,7 @@ import { Plus, ClipboardList, ArrowUpRight, ArrowDownLeft, Eye, Loader2, AlertTr
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
+import { createMovement } from '@/api/products'
 import { useStores } from '@/hooks/useStores'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
@@ -58,6 +59,7 @@ export function ConsignmentsPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const organizationId = useAuthStore((state) => state.currentOrganization?.id)
+  const userId = useAuthStore((state) => state.user?.id)
   const { hasPermission } = usePermissions()
   const { data: storesData } = useStores()
 
@@ -168,6 +170,21 @@ export function ConsignmentsPage() {
             status: 'ACTIVE',
           })
         if (error) throw error
+
+        if (userId) {
+          try {
+            await createMovement(organizationId, userId, {
+              product_id: selectedProductId,
+              store_id: selectedStoreId,
+              movement_type: 'CONSIGNMENT_OUT',
+              quantity: quantity,
+              notes: 'Consignación de salida',
+            })
+          } catch {
+            console.warn('consignment created but inventory sync failed')
+          }
+        }
+
         toast({ title: 'Consignación de salida creada', description: 'La consignación se ha creado correctamente' })
       } else {
         // Create inbound consignment (RECEIVED)
@@ -227,6 +244,11 @@ export function ConsignmentsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consignments'] })
+      queryClient.invalidateQueries({ queryKey: ['consignment-partners'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['posInventory'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['movements'] })
       setDialogOpen(false)
       resetForm()
     },
