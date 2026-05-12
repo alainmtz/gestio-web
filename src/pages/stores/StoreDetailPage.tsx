@@ -4,12 +4,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Trash2, MapPin, Settings, Warehouse } from 'lucide-react'
 import { storeSchema, type StoreFormData } from '@/schemas'
 import { getStore, createStore, updateStore, deleteStore } from '@/api/stores'
 import { getCurrencies } from '@/api/settings'
@@ -138,7 +137,7 @@ export function StoreDetailPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/stores">
@@ -147,10 +146,13 @@ export function StoreDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {isNew ? 'Nueva Tienda' : 'Editar Tienda'}
-            </h1>
-            <p className="text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">
+                {isNew ? 'Nueva Tienda' : 'Editar Tienda'}
+              </h1>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
               {isNew ? 'Crea una nueva tienda' : 'Edita los detalles de la tienda'}
             </p>
           </div>
@@ -176,11 +178,8 @@ export function StoreDetailPage() {
 
       <div className="overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información General</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3"><Warehouse className="h-3.5 w-3.5 inline mr-1.5" />Información General</p>
             <div className="space-y-2">
               <Label htmlFor="name">Nombre de la tienda *</Label>
               <Input id="name" {...register('name')} placeholder="Tienda Principal" />
@@ -199,14 +198,10 @@ export function StoreDetailPage() {
               <Label htmlFor="phone">Teléfono</Label>
               <Input id="phone" {...register('phone')} placeholder="+53 5 1234567" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ubicación</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3"><MapPin className="h-3.5 w-3.5 inline mr-1.5" />Ubicación</p>
             <div className="space-y-2">
               <Label htmlFor="address">Dirección</Label>
               <Input id="address" {...register('address')} placeholder="Calle 123" />
@@ -231,14 +226,10 @@ export function StoreDetailPage() {
                 <Input id="postal_code" {...register('postal_code')} placeholder="10400" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuración</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3"><Settings className="h-3.5 w-3.5 inline mr-1.5" />Configuración</p>
             <div className="space-y-2">
               <Label>Tipo de local</Label>
               <Select
@@ -291,8 +282,7 @@ export function StoreDetailPage() {
                 onCheckedChange={(checked) => setValue('is_active', checked)}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
         </div>
       </div>
     </form>

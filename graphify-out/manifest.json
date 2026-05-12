@@ -103,6 +103,10 @@
     "mtime": 1775932163.963558,
     "hash": "fbd70c66110c64ffc70d33f5ea8bd3f6"
   },
+  "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260509000000_fix_inventory_unique_null_variant.sql": {
+    "mtime": 1778338103.8312583,
+    "hash": "60250e2e97aab8cf66161cb6007c953d"
+  },
   "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260130175200_add_suppliers_rls_policies.sql": {
     "mtime": 1775932163.9654775,
     "hash": "3dca164d0ed6477ff4c6eceb463114bb"
@@ -114,6 +118,10 @@
   "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260205110000_fix_inventory_entries_rls.sql": {
     "mtime": 1775932163.9674919,
     "hash": "62b43dacaee8c3843b7d1849460af7cd"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260509142032_create_pos_sale_rpc.sql": {
+    "mtime": 1778353187.6038902,
+    "hash": "3955507ea6f323ec61f6962add646669"
   },
   "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260506000000_add_payments_rls_policies.sql": {
     "mtime": 1778100054.3443615,
@@ -167,6 +175,14 @@
     "mtime": 1775932163.9683108,
     "hash": "30ca8eead2e5f6ec0fc6ce93209852e0"
   },
+  "/home/alain/proyectos/WEB/gestio-web/supabase/migrations/20260512000000_get_role_permissions_rpc.sql": {
+    "mtime": 1778591064.4944332,
+    "hash": "78cb24b2f45cb1a0bc8ccfcd60d0c620"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/supabase/functions/check-warranty-expiration/index.ts": {
+    "mtime": 1778349175.4696367,
+    "hash": "6ee4cab3abcb30600182338862d73eae"
+  },
   "/home/alain/proyectos/WEB/gestio-web/supabase/functions/send-invitation/index.ts": {
     "mtime": 1778087879.8818903,
     "hash": "ac8c4abe0b5c36505da6ce677d780bfa"
@@ -188,39 +204,39 @@
     "hash": "6051903a2f7363ee232a01bd32f60b6a"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/main.tsx": {
-    "mtime": 1777495198.308762,
-    "hash": "bcd834c925f3671abe0cf1946e30e668"
+    "mtime": 1778357802.9098852,
+    "hash": "46b264074d70d1d8d3ca01cea0e171c4"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/App.tsx": {
-    "mtime": 1778262036.5147803,
-    "hash": "f0933d637b53e8f083ff6cff4d8126f7"
+    "mtime": 1778591223.694253,
+    "hash": "5189ee0341ece5b37022d919f27f90c8"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/vite-env.d.ts": {
     "mtime": 1775931624.0238824,
     "hash": "a88bc104192ad2aa9f161afdaca8ba36"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/App.auth-routing.test.tsx": {
-    "mtime": 1778247008.6631937,
-    "hash": "92b4291743ed53bc6da39d385e59b22f"
+    "mtime": 1778592742.315412,
+    "hash": "67b20f9674623fb1f5540d5797fa3bab"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/schemas/index.ts": {
-    "mtime": 1778090260.5507784,
-    "hash": "91f23e71c87c02adc60e608c8dac26fb"
+    "mtime": 1778347175.1360846,
+    "hash": "f2fc8cfc0285682c19d1c70d98d7e466"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/schemas/validation.test.ts": {
     "mtime": 1778257153.7966356,
     "hash": "a8fbc7df0da4c2b060ec3a4c7cba5357"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/billing.ts": {
-    "mtime": 1778275155.0705242,
-    "hash": "06de92cfb48d940037086752c30bf4ce"
+    "mtime": 1778347673.5552459,
+    "hash": "9de98c995353193acc745152da4621c5"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/products.ts": {
-    "mtime": 1778101281.1253934,
-    "hash": "abe6cf4b20ea4551ffc743731d7814bf"
+    "mtime": 1778349105.3418722,
+    "hash": "c5b4bf1ad02ab6831683ef1eb9034df0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/customers.ts": {
-    "mtime": 1776710287.9305646,
+    "mtime": 1778588577.6062732,
     "hash": "21e519ad65a2c6d141264b73c24e129c"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/customers.test.ts": {
@@ -228,8 +244,8 @@
     "hash": "85b3933c419d4d7c6d49124827ebf2d2"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/notifications.ts": {
-    "mtime": 1778087827.2204804,
-    "hash": "59ed8e9d4ca3eafe0f81091bacd27f83"
+    "mtime": 1778349122.8643131,
+    "hash": "e96c7ee7c76b4ba50d3cdeca31541384"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/schedules.ts": {
     "mtime": 1776710206.779411,
@@ -248,7 +264,7 @@
     "hash": "fd6d9de4503d66bbbd7550cf8f212904"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/stores.ts": {
-    "mtime": 1776862095.0637841,
+    "mtime": 1778588577.607273,
     "hash": "1aa85382e1d1a5df53a27869365684ca"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/api/tables.test.ts": {
@@ -260,11 +276,11 @@
     "hash": "43e7a2398b0a076ead1b58f22677a845"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/config/notifications.ts": {
-    "mtime": 1778087852.60416,
-    "hash": "d825392966068b212d2e725d402bc718"
+    "mtime": 1778349129.1274707,
+    "hash": "630643467224fc809d42704309598315"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/lib/supabase.ts": {
-    "mtime": 1775931281.3403363,
+    "mtime": 1778588577.608273,
     "hash": "1fa2818be8cf57fca28b9bdd970c1fef"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/lib/cashRegisterReport.ts": {
@@ -300,60 +316,60 @@
     "hash": "a50fba3f3d26845bbd2d1f3497f2896e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/consignments/ConsignmentPartnersPage.tsx": {
-    "mtime": 1777558561.6770105,
-    "hash": "86bba33c10ec68d208c55b25389ae974"
+    "mtime": 1778609062.8746893,
+    "hash": "a1cba3d15f8e785c44bf76f746e54e50"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/consignments/ConsignmentDetailPage.tsx": {
-    "mtime": 1777558504.1336448,
-    "hash": "bd5adef32228bde0a8bd43a836ab6809"
+    "mtime": 1778608961.5170298,
+    "hash": "7c29ef28c278788ac4c13fa2ed172ac1"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/consignments/ConsignmentsPage.tsx": {
-    "mtime": 1777561550.1946414,
-    "hash": "93be4e883ed7bca3353ba39fa6bb4961"
+    "mtime": 1778608884.355005,
+    "hash": "9950114e14c9ff943a03b65d1d76ab61"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/pos/POSPage.tsx": {
-    "mtime": 1778100332.6183078,
-    "hash": "f4f94f66513f58863737cd90ab38b111"
+    "mtime": 1778616145.3307533,
+    "hash": "2b0ccb19b75e30706478427b6d251399"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/LoginPage.test.tsx": {
-    "mtime": 1777048733.622316,
-    "hash": "6370eea7250d93d6c06a9b54a1b4ace9"
+    "mtime": 1778596214.5468466,
+    "hash": "e7620a3df91eeadfbd4a999ae9b359b8"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/ForgotPasswordPage.tsx": {
     "mtime": 1776546209.4963796,
     "hash": "6e41aaabb973d8a26f050850defc64ee"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/UnauthorizedPage.tsx": {
-    "mtime": 1776861624.3272896,
-    "hash": "1442be2fd7618b5a59e5f2686da32a2f"
+    "mtime": 1778616106.0974522,
+    "hash": "91efa97d2c7d8301af27605259e5403a"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/AcceptInvitationPage.tsx": {
-    "mtime": 1777988060.2898462,
-    "hash": "ed6e60ff5d3c7dc74f9e4f73d2b8b779"
+    "mtime": 1778616140.1946194,
+    "hash": "2c1de2c56959a32cd40331e83eb6bcb0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/AuthCallbackPage.tsx": {
-    "mtime": 1778084740.7140362,
-    "hash": "6d75961fac9f7bd831ab9b7ed81ed59f"
+    "mtime": 1778605771.3566487,
+    "hash": "a39546dc0e664be247f8814671172d33"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/ResetPasswordPage.tsx": {
     "mtime": 1776709742.1040792,
     "hash": "b31a066bdba895b9511cf9a463afbae0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/RegisterPage.tsx": {
-    "mtime": 1777988087.3514082,
-    "hash": "fd80793934a4aa5a99f338167c824966"
+    "mtime": 1778605607.2071743,
+    "hash": "3da0e13f864a6e99a145b306464bb394"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/LoginPage.ui.test.tsx": {
     "mtime": 1777048733.622316,
     "hash": "eddf25cc093c35b952ac30008384d201"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/RegisterPage.test.tsx": {
-    "mtime": 1775961869.8683715,
-    "hash": "683c2c3a233bc34c8b54a9785deba353"
+    "mtime": 1778594301.4538918,
+    "hash": "a804b0a5a71504e3dfd98837ee5e854e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/auth/LoginPage.tsx": {
-    "mtime": 1778087027.2840614,
-    "hash": "c6acf3095546c5f963ff52a393d1214d"
+    "mtime": 1778596110.7052424,
+    "hash": "eb80572660b99c2c5390c0263124422a"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/notifications/NotificationsPage.tsx": {
     "mtime": 1777916426.195122,
@@ -364,16 +380,20 @@
     "hash": "b17b2a125b9d0ef403195519f4f04c45"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/customers/CustomersPage.tsx": {
-    "mtime": 1777561341.8436403,
-    "hash": "02ddbfdd2f901c05cfb9cd34d4681249"
+    "mtime": 1778608525.4413776,
+    "hash": "6fa0da6ce01ba0fed5e9348b1375faf9"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/customers/CustomerDetailPage.tsx": {
-    "mtime": 1776700294.3265135,
-    "hash": "de4e784cae3b0872650935595a68663e"
+    "mtime": 1778608535.6696525,
+    "hash": "df599cfdb4d12519cdaffadb75889ab0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/customers/CustomersPage.ui.test.tsx": {
     "mtime": 1777561775.6430528,
     "hash": "d1ce475b8ed60bfe99813d2df2e57d84"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/src/pages/mock/MockDashboardPage.tsx": {
+    "mtime": 1778591521.96053,
+    "hash": "2ca857290eef92ec5673109e7c3e8953"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/reports/InventoryReportPage.tsx": {
     "mtime": 1778256559.629704,
@@ -388,8 +408,8 @@
     "hash": "bc877fe675f133bd4efad164e53cc723"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/reports/SalesReportPage.tsx": {
-    "mtime": 1778277391.570634,
-    "hash": "b55cd77593218fabb7280ea144b42d05"
+    "mtime": 1778355516.6359987,
+    "hash": "b9bbc98cdccae09c11c8490671c1648c"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/reports/AuditLogPage.tsx": {
     "mtime": 1776546708.5043771,
@@ -420,40 +440,40 @@
     "hash": "fcc379bb2b0ce7a4be919c96235e398e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/suppliers/SuppliersPage.tsx": {
-    "mtime": 1777048733.6203158,
-    "hash": "337a2119f9b07083aed08f032172090f"
+    "mtime": 1778616193.7454987,
+    "hash": "f3bee564924f68b3a30af6ad28ce1570"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/suppliers/SuppliersPage.ui.test.tsx": {
     "mtime": 1777048733.6063154,
     "hash": "f1ad67d86d2f2742cf01514f3000d36e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/suppliers/SupplierDetailPage.tsx": {
-    "mtime": 1776689599.1508746,
-    "hash": "d0967baa02ff1684fbea65d7f32e027b"
+    "mtime": 1778616165.8375034,
+    "hash": "4e9a774445ac305efae6efcb7d588afd"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/InvoicesPage.tsx": {
-    "mtime": 1778265587.3581953,
-    "hash": "aef3346eba6d416dee8a5e682e91b34d"
+    "mtime": 1778608974.633374,
+    "hash": "11766604c377861b7b4b84507896656d"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/OffersPage.tsx": {
-    "mtime": 1778265587.355195,
-    "hash": "8bc04eda5b0b0d17fcdec0675bae2ae0"
+    "mtime": 1778608587.5720477,
+    "hash": "3825cf5198a213ca744465610ab5c331"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/OfferDetailPage.tsx": {
-    "mtime": 1778267320.9195826,
-    "hash": "dd40ae0e7df0e23104e58266e4724de4"
+    "mtime": 1778608808.512987,
+    "hash": "abb9be75cd3e528f57dc209c6c892029"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/InvoiceDetailPage.tsx": {
-    "mtime": 1778275311.5841095,
-    "hash": "6b784105ed69e5780a1941a1a117fdb7"
+    "mtime": 1778609082.5830176,
+    "hash": "f032a5e54e68fcd1bdab207136fa1d47"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/PreInvoicesPage.tsx": {
-    "mtime": 1778265587.3571951,
-    "hash": "2b98d4026f5e4f994fbb6760a8e31ad5"
+    "mtime": 1778608888.9931266,
+    "hash": "d3c916dd025d22c737113844ebec9da4"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/billing/PreInvoiceDetailPage.tsx": {
-    "mtime": 1778273492.5240257,
-    "hash": "5eb93def7646c7364476007df3b05497"
+    "mtime": 1778608873.5467215,
+    "hash": "cb30922f37469598d0a94d1a6e5b0f01"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/cash-register/SessionsPage.tsx": {
     "mtime": 1777561482.5110168,
@@ -468,12 +488,12 @@
     "hash": "07fc2a9c3759bf3870e483330a46cef7"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/MovementsPage.tsx": {
-    "mtime": 1777659337.5580606,
-    "hash": "2472c1267ecd76ecd296b4778a761f50"
+    "mtime": 1778608956.985911,
+    "hash": "19f7f489d311b385b7d97e68f37b2959"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/TransfersPage.tsx": {
-    "mtime": 1777561686.5039132,
-    "hash": "c5706c6c1755d9d5e9c596f0898197c9"
+    "mtime": 1778608960.306998,
+    "hash": "42b6ed344a808242856019e437133f5b"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/ProductsPage.ui.test.tsx": {
     "mtime": 1777561123.4833992,
@@ -484,20 +504,20 @@
     "hash": "12254e58777ead351bb09956b9946d06"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/LowStockPage.tsx": {
-    "mtime": 1777757793.2949965,
-    "hash": "228d92e429b10c675841608f5ce33df8"
+    "mtime": 1778608967.401184,
+    "hash": "66f978f3db38b4170062b789df6dfe30"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/CategoriesPage.tsx": {
-    "mtime": 1777050424.7337155,
-    "hash": "4382dd6269f94c9addce1b4aacb34ee7"
+    "mtime": 1778608725.1657465,
+    "hash": "a1dbe712958e0a9ca5b66aeb94e4c44e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/ProductsPage.tsx": {
-    "mtime": 1778101519.0801885,
-    "hash": "bff71d11737bb0421d017c170fd06bd9"
+    "mtime": 1778608671.396301,
+    "hash": "4bef772903cfb3ea3351c20be1ac165b"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/inventory/ProductDetailPage.tsx": {
-    "mtime": 1778101492.8574398,
-    "hash": "c02e8066b730c123ce04332b5f9e1fd7"
+    "mtime": 1778608980.7885354,
+    "hash": "24c73f4aa27366d7e444a701029394ef"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/teams/SchedulesPage.tsx": {
     "mtime": 1778088836.7024944,
@@ -508,40 +528,44 @@
     "hash": "7cec6376d58f56aec622b565697daf80"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/teams/TeamDetailPage.tsx": {
-    "mtime": 1777658945.7878098,
-    "hash": "13a4622afb5269b78aa974385fede541"
+    "mtime": 1778604748.4437509,
+    "hash": "bde0267e5b01cfda0804cc4b9158f995"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/teams/TeamsPage.ui.test.tsx": {
     "mtime": 1777048733.6143157,
     "hash": "cba18467a9b0d99f92cfb92d69cd8623"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/teams/TeamsPage.tsx": {
-    "mtime": 1777658871.032505,
-    "hash": "2e8a7db2ced2c0feb2ee4b02d3e06eae"
+    "mtime": 1778608235.73859,
+    "hash": "772518a14cdbb2b417b891e9d7292f80"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/src/pages/errors/PermissionErrorPage.tsx": {
+    "mtime": 1778616112.1528883,
+    "hash": "575d70e43fd895df48892f6022baf730"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/stores/StoresPage.ui.test.tsx": {
     "mtime": 1776960591.7708488,
     "hash": "b35bb139aba18db8b6d0197c5eb78753"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/stores/StoresPage.tsx": {
-    "mtime": 1777048733.6203158,
-    "hash": "67ff70d747e4b66737ebc39e48ae0a94"
+    "mtime": 1778608709.9043362,
+    "hash": "1295f73f41e39cfe7ab25a693de4a624"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/stores/StoreDetailPage.tsx": {
-    "mtime": 1776862176.4260833,
-    "hash": "c93e704bbd2414eb8c0d96b1f14d2fcc"
+    "mtime": 1778608780.8552434,
+    "hash": "8a8e863368699127cb8cf93ba94ab9b0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/pages/dashboard/DashboardPage.tsx": {
-    "mtime": 1778008152.368066,
-    "hash": "79c140fecb947bc9de21dabf1be15a49"
+    "mtime": 1778605657.4565449,
+    "hash": "2147cd106e9451c76bbace01c2b7020a"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/products/ProductCsvImport.tsx": {
     "mtime": 1778095392.6344175,
     "hash": "a8bb9cb04aa70814166aa93c05631b2c"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/products/ProductCard.tsx": {
-    "mtime": 1778095222.6307628,
-    "hash": "939363a8c94944541800f4297cdc27be"
+    "mtime": 1778349198.7032213,
+    "hash": "924bcc494a63c6a10974cdf718ccb74b"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/products/ProductForm.tsx": {
     "mtime": 1778101344.0831912,
@@ -555,6 +579,10 @@
     "mtime": 1778088929.4269724,
     "hash": "68960acbf0ceb7f7d5153cf39ccae060"
   },
+  "/home/alain/proyectos/WEB/gestio-web/src/components/shared/CacheWarningBanner.tsx": {
+    "mtime": 1778357897.4666805,
+    "hash": "5af5aa985d71702f6e9eb6bb2dbf1692"
+  },
   "/home/alain/proyectos/WEB/gestio-web/src/components/shared/LoadingFallback.tsx": {
     "mtime": 1777904371.155764,
     "hash": "30c3226951685e0076fe47dc673d0413"
@@ -564,19 +592,19 @@
     "hash": "84486f818f28fbc80aa0c2773c1e74c8"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/DashboardLayout.tsx": {
-    "mtime": 1777923070.1624138,
-    "hash": "0dc06c014b90868e5cb9b2991da1c20f"
+    "mtime": 1778601927.645401,
+    "hash": "0c72cbb8ff0149d9ea6673c290e797a7"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/Header.tsx": {
-    "mtime": 1778262005.8049383,
-    "hash": "0e9ecdf05ee18b70786f84b2ba61281d"
+    "mtime": 1778616214.5985591,
+    "hash": "b51d6f43634743a2692c9fe7969dcb39"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/Sidebar.tsx": {
     "mtime": 1777662380.6003964,
     "hash": "a4097a65ac850bf80df7124935a73f5e"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/SettingsLayout.tsx": {
-    "mtime": 1778076066.0852313,
+    "mtime": 1778588577.607273,
     "hash": "7043018d5beae0384021eed58adbad13"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/PendingInvitationBanner.tsx": {
@@ -584,8 +612,16 @@
     "hash": "986af4d6a5943588a729322ad26285a2"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/layout/AppSidebar.tsx": {
-    "mtime": 1777559389.0887687,
-    "hash": "f2d5c34e63c2735e9217edc6531d56c8"
+    "mtime": 1778602631.8884804,
+    "hash": "f7465cdefba6b703e8a90f47293dde77"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/src/components/onboarding/MicroInteractionLab.tsx": {
+    "mtime": 1778594006.722561,
+    "hash": "8e839735e8bfedaa6bb75b43c46e64cb"
+  },
+  "/home/alain/proyectos/WEB/gestio-web/src/components/guards/PermissionGuard.tsx": {
+    "mtime": 1778591202.0877347,
+    "hash": "6c1f5983572b5bef565700365aa0cd6b"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/sheet.tsx": {
     "mtime": 1777495121.418746,
@@ -624,7 +660,7 @@
     "hash": "703651c1c754313f9e76844c8ac36e6f"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/sidebar.tsx": {
-    "mtime": 1777497819.2113533,
+    "mtime": 1778588450.1099696,
     "hash": "1c9e90189b7e508a5431e4ced93baf31"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/button.tsx": {
@@ -640,7 +676,7 @@
     "hash": "b0b931c1a15ec3924fa5fecebaa15685"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/card.tsx": {
-    "mtime": 1775931312.1818194,
+    "mtime": 1778588450.1099696,
     "hash": "d33bab4e192d4f84645232bca3c44a28"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/alert-dialog.tsx": {
@@ -684,7 +720,7 @@
     "hash": "54ef74387c693f78436178a6274f021f"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/ui/badge.tsx": {
-    "mtime": 1775931354.0235453,
+    "mtime": 1778588450.1089697,
     "hash": "43f63a2cdf19384dbd49baca1aec6ff1"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/components/stores/StoreForm.tsx": {
@@ -696,16 +732,16 @@
     "hash": "b53a6f2bc4795fa2e158b40203f1d303"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useCustomers.ts": {
-    "mtime": 1776700273.2589424,
-    "hash": "aa5df12f895fc3f182eaaf9d9796d3ac"
+    "mtime": 1778354654.1274712,
+    "hash": "eec39cdcdac52c499f9ee3f1d94e6e0f"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useDefaultCurrency.ts": {
     "mtime": 1778265556.9302082,
     "hash": "a2d85a98873f779dc5a2c8945c02b5b0"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useRealtimeNotifications.ts": {
-    "mtime": 1778088802.9025912,
-    "hash": "e9d3c22e8bca11b78a134d89494e6ffe"
+    "mtime": 1778354476.401318,
+    "hash": "f16c30a9bd0ec77e55c374f8b5c7b49f"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useNotifications.ts": {
     "mtime": 1777992375.809296,
@@ -728,23 +764,23 @@
     "hash": "5238e085864d87d3e46fc3228cb1a747"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useProducts.ts": {
-    "mtime": 1778101420.168364,
-    "hash": "716b77db9236fc705c22c8fc1ab8cdb0"
+    "mtime": 1778355001.4425414,
+    "hash": "f96a678cf2d83ef1f0541e31d5fc3b7d"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useOrganization.ts": {
-    "mtime": 1778246672.4555614,
-    "hash": "f8221a22c8d6502d3afdd5e9a6c67a44"
+    "mtime": 1778356886.4640603,
+    "hash": "d5baed5bb052fe2fddfcb7263fa1121f"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useSettings.ts": {
     "mtime": 1777919032.8538682,
     "hash": "05d299ca322dd5562a3c8009cb9432a2"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/usePermissions.ts": {
-    "mtime": 1776960591.6518455,
-    "hash": "43827dcf3de77192188f72354f829e7e"
+    "mtime": 1778591439.4585059,
+    "hash": "21aa5b6edf9824d9cf67a50d9f922f9d"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useStores.ts": {
-    "mtime": 1776862110.8852313,
+    "mtime": 1778588577.608273,
     "hash": "1fa67997621e6f805dfa6caefd9b5777"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/use-mobile.ts": {
@@ -752,12 +788,12 @@
     "hash": "209b5193af16624cdd89d3591480dd48"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useCashRegister.ts": {
-    "mtime": 1776525747.692354,
-    "hash": "0a7e2891dede9300356a4c295b58b7cf"
+    "mtime": 1778354635.8929424,
+    "hash": "b387ad78b434761e504dd53a1763c489"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/hooks/useBilling.ts": {
-    "mtime": 1778275170.7839844,
-    "hash": "258d06dc7f0bbe2cd5197149fa25aab6"
+    "mtime": 1778354994.730347,
+    "hash": "290669d960b571c7642c1a5e04c4f451"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/test/setup.ts": {
     "mtime": 1775961600.973301,
@@ -776,12 +812,12 @@
     "hash": "8cb6774738c191a42b10c6a6e8f9b1cd"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/router/PermissionRoute.tsx": {
-    "mtime": 1775936065.7239022,
-    "hash": "d1eebfb0162fb39832a9c9bb488c2c56"
+    "mtime": 1778590436.2390428,
+    "hash": "255b8607a433086fdc2e7a7da4668ca3"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/router/AppRouter.tsx": {
-    "mtime": 1777904707.8357432,
-    "hash": "7f68a8d20eee6b4314ff86a5bfc67776"
+    "mtime": 1778591470.3812644,
+    "hash": "b34ea3f56919d534ecf17e0fcf425c1b"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/router/ProtectedRoute.test.tsx": {
     "mtime": 1777048733.626316,
@@ -804,8 +840,8 @@
     "hash": "20ae9ff0f0787c40682f426cb60d10d4"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/stores/authStore.ts": {
-    "mtime": 1778086977.2017205,
-    "hash": "15fa2dbf2e8ad9c8b753e575f170b565"
+    "mtime": 1778591074.6386766,
+    "hash": "579a7378a838329f919ea6e9078ce942"
   },
   "/home/alain/proyectos/WEB/gestio-web/src/stores/posStore.ts": {
     "mtime": 1775931263.3963096,
@@ -824,35 +860,35 @@
     "hash": "74a027dc02b6a898e21446c059623dcb"
   },
   "/home/alain/proyectos/WEB/gestio-web/RELEASE_CHECKLIST.md": {
-    "mtime": 1777406552.3389988,
-    "hash": "6e3fcf4a931ef8fd23f567c89c99c239"
+    "mtime": 1778606748.3771524,
+    "hash": "6ac59c26411a3a6e90566f8efc882813"
   },
   "/home/alain/proyectos/WEB/gestio-web/AGENTS.md": {
     "mtime": 1778335911.8785293,
     "hash": "3f0ee159fb4a20b3895b768374d09d35"
   },
   "/home/alain/proyectos/WEB/gestio-web/BLUEPRINT.md": {
-    "mtime": 1778101840.2043583,
+    "mtime": 1778588577.605273,
     "hash": "97fc3c61643fc0bcdf0dbb7282b6e743"
   },
   "/home/alain/proyectos/WEB/gestio-web/Progress_Sumary.md": {
-    "mtime": 1777750332.373469,
-    "hash": "2fdef4f0e4f23dd83ea50a3cbc55c919"
+    "mtime": 1778606749.8461921,
+    "hash": "500c96b67b4200658a83e0f458fc36fe"
   },
   "/home/alain/proyectos/WEB/gestio-web/README.md": {
-    "mtime": 1777750191.74975,
-    "hash": "d8b163fa315b93e1fbe80f4c30adc203"
+    "mtime": 1778606743.825029,
+    "hash": "f25ece305bdf17202995eba173388cda"
   },
   "/home/alain/proyectos/WEB/gestio-web/index.html": {
-    "mtime": 1775931204.298635,
+    "mtime": 1778588450.1059697,
     "hash": "765d648287a876b77eff36ecd90dd461"
   },
   "/home/alain/proyectos/WEB/gestio-web/SETUP.md": {
-    "mtime": 1777663091.712783,
-    "hash": "5938074acd5a60aa78d405ec80dc8460"
+    "mtime": 1778606746.3600976,
+    "hash": "82c2b36b6c13092f51bc88b80dff0c8e"
   },
   "/home/alain/proyectos/WEB/gestio-web/TODO.md": {
-    "mtime": 1777750321.9861944,
+    "mtime": 1778588577.605273,
     "hash": "f510657af63b8e1d1839b7e602c4d9df"
   },
   "/home/alain/proyectos/WEB/gestio-web/MANUAL_USUARIO.md": {
@@ -1020,8 +1056,8 @@
     "hash": "875c06ebdd5c383ce997226d34f46c47"
   },
   "/home/alain/proyectos/WEB/gestio-web/docs/history/progress-2026-04.md": {
-    "mtime": 1777750321.980194,
-    "hash": "8c4438af5486e8758370ce1ccf3a3c0f"
+    "mtime": 1778606752.9752772,
+    "hash": "502933523587d50093c8f27439d1634e"
   },
   "/home/alain/proyectos/WEB/gestio-web/public/favicon.svg": {
     "mtime": 1775931205.563778,

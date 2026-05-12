@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useSuppliers, useDeleteSupplier, useCreateSupplier, useUpdateSupplier } from '@/hooks/useSuppliers'
 import { useStores } from '@/hooks/useStores'
 import { Button } from '@/components/ui/button'
@@ -62,7 +62,6 @@ export function SuppliersPage() {
   const deleteSupplier = useDeleteSupplier()
   const createSupplier = useCreateSupplier()
   const updateSupplier = useUpdateSupplier()
-  const navigate = useNavigate()
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
 
@@ -184,11 +183,16 @@ export function SuppliersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Proveedores</h1>
-          <p className="text-muted-foreground">Gestiona tus proveedores</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Proveedores</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+            Gestiona tus proveedores
+          </p>
         </div>
         {hasPermission(PERMISSIONS.SUPPLIER_CREATE) && (
           <Button onClick={() => handleOpenForm()}>
@@ -209,52 +213,65 @@ export function SuppliersPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[180px] w-full" />
-          ))}
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <Truck className="h-3.5 w-3.5 inline mr-1.5" />Lista de Proveedores
+          </p>
+          <div className="space-y-3 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-24 w-full bg-muted rounded-md" />
+            ))}
+          </div>
         </div>
       ) : suppliers.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          No hay proveedores. Crea el primero.
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <Truck className="h-3.5 w-3.5 inline mr-1.5" />Lista de Proveedores
+          </p>
+          <div className="text-center py-12 text-muted-foreground">
+            No hay proveedores. Crea el primero.
+          </div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {suppliers.map((supplier) => (
-            <Card key={supplier.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/suppliers/${supplier.id}`)}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Truck className="h-5 w-5 text-primary" />
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <Truck className="h-3.5 w-3.5 inline mr-1.5" />Lista de Proveedores ({suppliers.length})
+          </p>
+          <div className="grid gap-3">
+            {suppliers.map((supplier) => (
+              <div key={supplier.id} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50">
+                <Link to={`/suppliers/${supplier.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <Truck className="h-4 w-4 text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-medium">{supplier.name}</h3>
-                    <p className="text-sm text-muted-foreground">{supplier.code}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                      <span>{supplier.code}</span>
+                      <Badge variant={supplier.is_active ? 'success' : 'secondary'}>
+                        {supplier.is_active ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                      {supplier.email && <span>{supplier.email}</span>}
+                      {supplier.phone && <span>{supplier.phone}</span>}
+                      {supplier.city && <span>{supplier.city}</span>}
+                    </div>
                   </div>
+                </Link>
+                <div className="flex gap-1 shrink-0">
+                  {hasPermission(PERMISSIONS.SUPPLIER_EDIT) && (
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenForm(supplier)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {hasPermission(PERMISSIONS.SUPPLIER_DELETE) && (
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(supplier.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-                <Badge variant={supplier.is_active ? 'success' : 'secondary'}>
-                  {supplier.is_active ? 'Activo' : 'Inactivo'}
-                </Badge>
               </div>
-              <div className="mt-4 space-y-1 text-sm">
-                {supplier.city && <p><span className="text-muted-foreground">Ciudad:</span> {supplier.city}</p>}
-                {supplier.email && <p><span className="text-muted-foreground">Email:</span> {supplier.email}</p>}
-                {supplier.phone && <p><span className="text-muted-foreground">Teléfono:</span> {supplier.phone}</p>}
-              </div>
-              <div className="mt-4 flex gap-2">
-                {hasPermission(PERMISSIONS.SUPPLIER_EDIT) && (
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenForm(supplier) }}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                )}
-                {hasPermission(PERMISSIONS.SUPPLIER_DELETE) && (
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(supplier.id) }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

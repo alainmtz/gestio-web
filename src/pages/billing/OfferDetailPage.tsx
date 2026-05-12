@@ -4,7 +4,6 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ArrowLeft, Save, Loader2, Trash2, Plus, FileCheck, Search, Package, Check, X, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Trash2, Plus, FileCheck, Search, Package, X, FileText } from 'lucide-react'
 import { offerSchema, type OfferFormData } from '@/schemas'
 import { getOffer, createOffer, convertOfferToInvoice, convertOfferToPreInvoice, rejectOffer, convertPrice } from '@/api/billing'
 import { getCustomers } from '@/api/customers'
@@ -316,7 +315,7 @@ export function OfferDetailPage() {
 
   if (loadingOffer) {
     return (
-      <div className="container py-8 flex justify-center">
+      <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
@@ -324,59 +323,61 @@ export function OfferDetailPage() {
 
   return (
     <>
-    <form onSubmit={handleSubmit(onSubmit)} className="container py-8 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/billing/offers">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {isNew ? 'Nueva Oferta' : `Oferta ${offer?.number || ''}`}
-            </h1>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Link to="/billing/offers">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">
+                {isNew ? 'Nueva Oferta' : `Oferta ${offer?.number || ''}`}
+              </h1>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
               {isNew ? 'Crea una nueva oferta' : offer?.status ? `Estado: ${offer.status}` : ''}
             </p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            {!isNew && offer && offer.status !== 'accepted' && hasPermission(PERMISSIONS.INVOICE_CREATE) && (
+              <>
+                <Button type="button" onClick={handleConvertToInvoice} disabled={convertToInvoiceMutation.isPending}>
+                  {convertToInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck className="mr-2 h-4 w-4" />}
+                  <span className="hidden sm:inline">Factura</span>
+                </Button>
+                <Button type="button" onClick={handleConvertToPreInvoice} disabled={convertToPreInvoiceMutation.isPending} variant="outline">
+                  {convertToPreInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                  <span className="hidden sm:inline">Pre-factura</span>
+                </Button>
+                <Button type="button" onClick={() => setShowRejectDialog(true)} disabled={rejectMutation.isPending} variant="destructive">
+                  {rejectMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
+                  <span className="hidden sm:inline">Rechazar</span>
+                </Button>
+              </>
+            )}
+            <Link to="/billing/offers">
+              <Button type="button" variant="outline">Cancelar</Button>
+            </Link>
+            {(isNew ? hasPermission(PERMISSIONS.OFFER_CREATE) : hasPermission(PERMISSIONS.OFFER_EDIT)) && (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isNew ? 'Crear' : 'Guardar'}
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {!isNew && offer && offer.status !== 'accepted' && hasPermission(PERMISSIONS.INVOICE_CREATE) && (
-            <>
-              <Button type="button" onClick={handleConvertToInvoice} disabled={convertToInvoiceMutation.isPending}>
-                {convertToInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck className="mr-2 h-4 w-4" />}
-                <span className="hidden sm:inline">Factura</span>
-              </Button>
-              <Button type="button" onClick={handleConvertToPreInvoice} disabled={convertToPreInvoiceMutation.isPending} variant="outline">
-                {convertToPreInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                <span className="hidden sm:inline">Pre-factura</span>
-              </Button>
-              <Button type="button" onClick={() => setShowRejectDialog(true)} disabled={rejectMutation.isPending} variant="destructive">
-                {rejectMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-                <span className="hidden sm:inline">Rechazar</span>
-              </Button>
-            </>
-          )}
-          <Link to="/billing/offers">
-            <Button type="button" variant="outline">Cancelar</Button>
-          </Link>
-          {(isNew ? hasPermission(PERMISSIONS.OFFER_CREATE) : hasPermission(PERMISSIONS.OFFER_EDIT)) && (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isNew ? 'Crear' : 'Guardar'}
-            </Button>
-          )}
-        </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-3 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Productos</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="lg:col-span-3 space-y-4">
+            {/* Products card */}
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <Package className="h-3.5 w-3.5 inline mr-1.5" />Productos
+              </p>
               <div className="space-y-3">
                 {fields.map((field, index) => {
                   const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
@@ -398,7 +399,7 @@ export function OfferDetailPage() {
                             {hasProduct ? (
                               <span className="flex items-center gap-2">
                                 <Package className="h-4 w-4" />
-                                 <span>{items?.[index]?.description}</span>
+                                <span>{items?.[index]?.description}</span>
                                 <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
                               </span>
                             ) : (
@@ -532,100 +533,100 @@ export function OfferDetailPage() {
                   <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          <div className="order-first lg:order-none space-y-4">
+            {/* Details card */}
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <FileText className="h-3.5 w-3.5 inline mr-1.5" />Detalles
+              </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tienda *</Label>
+                  <Select value={watch('store_id')} onValueChange={(v) => setValue('store_id', v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tienda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {storesData?.map(store => (
+                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.store_id && <p className="text-sm text-destructive">{errors.store_id.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Moneda *</Label>
+                  <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar moneda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currenciesData?.map(currency => (
+                        <SelectItem key={currency.id} value={currency.id}>
+                          {currency.code} - {currency.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.currency_id && <p className="text-sm text-destructive">{errors.currency_id.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <SearchableSelect
+                    value={watch('customer_id') || ''}
+                    onValueChange={(v) => setValue('customer_id', v || '')}
+                    options={[{ id: '', label: 'Sin cliente' }, ...(customersData?.customers?.map(c => ({ id: c.id, label: c.name })) || [])]}
+                    placeholder="Seleccionar cliente"
+                    searchPlaceholder="Buscar cliente..."
+                    emptyMessage="No se encontraron clientes"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Validez hasta</Label>
+                  <Input type="date" {...register('valid_until')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Notas</Label>
+                  <Textarea {...register('notes')} placeholder="Notas adicionales..." />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </form>
 
-        <div className="order-first lg:order-none space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalles</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tienda *</Label>
-                <Select value={watch('store_id')} onValueChange={(v) => setValue('store_id', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tienda" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {storesData?.map(store => (
-                      <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.store_id && <p className="text-sm text-destructive">{errors.store_id.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Moneda *</Label>
-                <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar moneda" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currenciesData?.map(currency => (
-                      <SelectItem key={currency.id} value={currency.id}>
-                        {currency.code} - {currency.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.currency_id && <p className="text-sm text-destructive">{errors.currency_id.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Cliente</Label>
-                <SearchableSelect
-                  value={watch('customer_id') || ''}
-                  onValueChange={(v) => setValue('customer_id', v || '')}
-                  options={[{ id: '', label: 'Sin cliente' }, ...(customersData?.customers?.map(c => ({ id: c.id, label: c.name })) || [])]}
-                  placeholder="Seleccionar cliente"
-                  searchPlaceholder="Buscar cliente..."
-                  emptyMessage="No se encontraron clientes"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Validez hasta</Label>
-                <Input type="date" {...register('valid_until')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Notas</Label>
-                <Textarea {...register('notes')} placeholder="Notas adicionales..." />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </form>
-
-    <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rechazar oferta</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2">
-          <Label>Motivo del rechazo *</Label>
-          <Textarea
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Explique el motivo del rechazo..."
-            rows={4}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectReason('') }}>
-            Cancelar
-          </Button>
-          <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim() || rejectMutation.isPending}>
-            {rejectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Rechazar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  </>
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechazar oferta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo del rechazo *</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Explique el motivo del rechazo..."
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectReason('') }}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim() || rejectMutation.isPending}>
+              {rejectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Rechazar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

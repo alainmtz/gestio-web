@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -29,11 +29,8 @@ export function PermissionErrorPage() {
         <p className="mb-6 text-muted-foreground">
           No se pudieron cargar los permisos. Redirigiendo al inicio de sesi&oacute;n en {countdown} segundos...
         </p>
-        <Button
-          variant="default"
-          onClick={() => navigate('/auth/login', { replace: true })}
-        >
-          Ir al inicio de sesi&oacute;n ahora
+        <Button variant="default" asChild>
+          <Link to="/auth/login">Ir al inicio de sesi&oacute;n ahora</Link>
         </Button>
       </div>
     </div>

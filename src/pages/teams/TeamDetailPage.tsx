@@ -24,7 +24,6 @@ interface Team {
 }
 
 interface TeamMember {
-  id: string
   team_id: string
   user_id: string
   role: 'leader' | 'member'
@@ -57,11 +56,25 @@ export function TeamDetailPage() {
   const { data: members, isLoading: loadingMembers } = useQuery({
     queryKey: ['teamMembers', id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: rawMembers } = await supabase
         .from('team_members')
-        .select('*, user:profiles(full_name, email)')
+        .select('*')
         .eq('team_id', id)
-      return data as TeamMember[] || []
+
+      if (!rawMembers || rawMembers.length === 0) return []
+
+      const userIds = rawMembers.map((m) => m.user_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || [])
+
+      return (rawMembers as TeamMember[]).map((m) => ({
+        ...m,
+        user: profileMap.get(m.user_id) || undefined,
+      }))
     },
     enabled: !!id,
   })
@@ -90,7 +103,6 @@ export function TeamDetailPage() {
           team_id: id,
           user_id: selectedUserId,
           role: selectedRole,
-          organization_id: organizationId,
         })
       if (error) throw error
     },
@@ -107,8 +119,12 @@ export function TeamDetailPage() {
   })
 
   const removeMemberMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const { error } = await supabase.from('team_members').delete().eq('id', memberId)
+    mutationFn: async ({ teamId, userId }: { teamId: string; userId: string }) => {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('user_id', userId)
       if (error) throw error
     },
     onSuccess: () => {
@@ -192,7 +208,7 @@ export function TeamDetailPage() {
             ) : members && members.length > 0 ? (
               <div className="space-y-2">
                 {members.map((member) => (
-                  <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3">
+                  <div key={`${member.team_id}-${member.user_id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm shrink-0">
                         {member.user?.full_name?.charAt(0) || '?'}
@@ -211,7 +227,7 @@ export function TeamDetailPage() {
                         variant="ghost" 
                         size="icon" 
                         className="text-destructive h-8 w-8"
-                        onClick={() => removeMemberMutation.mutate(member.id)}
+                        onClick={() => removeMemberMutation.mutate({ teamId: member.team_id, userId: member.user_id })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

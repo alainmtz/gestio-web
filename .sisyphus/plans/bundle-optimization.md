@@ -54,7 +54,7 @@ Reducir el tiempo de carga inicial dividiendo el bundle monolítico en chunks ba
 - Build output: 15-20 chunks pequeños en lugar de 1 monolítico
 
 ### Definition of Done
-- [ ] `npm run build` produce múltiples chunks JS
+- [ ] `pnpm run build` produce múltiples chunks JS
 - [ ] Chunk principal <200 KB gzip
 - [ ] Todas las rutas cargan correctamente (verificado manualmente)
 - [ ] No regressions en lint ni typecheck
@@ -87,8 +87,8 @@ Cada tarea DEBE incluir escenarios de QA ejecutados por agente (ver TODOs).
 Evidencia guardada en `.sisyphus/evidence/task-{N}-{scenario-slug}.{ext}`.
 
 - **Frontend/UI**: Use Playwright - Navigate, verify lazy chunk loaded
-- **Build verification**: Use Bash - `npm run build`, inspect dist/assets/
-- **Lint/Typecheck**: Use Bash - `npm run lint`, `npm run typecheck`
+- **Build verification**: Use Bash - `pnpm run build`, inspect dist/assets/
+- **Lint/Typecheck**: Use Bash - `pnpm run lint`, `pnpm run typecheck`
 
 ---
 
@@ -213,7 +213,7 @@ Wave FINAL (After ALL tasks):
     Tool: Bash
     Preconditions: vite.config.ts updated with manualChunks
     Steps:
-      1. Run `npm run build` in project directory
+      1. Run `pnpm run build` in project directory
       2. Verify build completes without config errors
       3. Check dist/assets/ has multiple JS files
     Expected Result: Build succeeds, multiple chunks generated
@@ -228,7 +228,7 @@ Wave FINAL (After ALL tasks):
   **Commit**: YES
   - Message: `chore(build): add manualChunks to vite.config.ts`
   - Files: `vite.config.ts`
-  - Pre-commit: `npm run build`
+  - Pre-commit: `pnpm run build`
 
 - [ ] 2. Create LoadingFallback component for Suspense boundaries
 
@@ -279,7 +279,7 @@ Wave FINAL (After ALL tasks):
     Tool: Bash (vitest)
     Preconditions: Component file created
     Steps:
-      1. Run `npm run typecheck` to verify TypeScript validity
+      1. Run `pnpm run typecheck` to verify TypeScript validity
       2. Verify file exists at correct path
     Expected Result: No type errors, file exists
     Failure Indicators: Type errors, missing file
@@ -303,7 +303,7 @@ Wave FINAL (After ALL tasks):
   **Commit**: YES
   - Message: `feat(components): add LoadingFallback for Suspense boundaries`
   - Files: `src/components/shared/LoadingFallback.tsx`
-  - Pre-commit: `npm run lint`
+  - Pre-commit: `pnpm run lint`
 
 - [ ] 3. Convert Inventory routes to React.lazy() in AppRouter.tsx
 
@@ -350,7 +350,7 @@ Wave FINAL (After ALL tasks):
   - [ ] 6 inventory page imports converted to lazy()
   - [ ] Suspense boundaries added around route elements
   - [ ] Static imports removed from file top
-  - [ ] `npm run lint` passes
+  - [ ] `pnpm run lint` passes
 
   **QA Scenarios (MANDATORY - task is INCOMPLETE without these):**
 
@@ -585,12 +585,12 @@ Wave FINAL (After ALL tasks):
   **Commit**: YES (grouped with all router changes)
   - Message: `refactor(router): lazy-load all page components with React.lazy()`
   - Files: `src/router/AppRouter.tsx`
-  - Pre-commit: `npm run lint`
+  - Pre-commit: `pnpm run lint`
 
 - [ ] 10. Build project and verify chunk output
 
   **What to do**:
-  - Run `npm run build`
+  - Run `pnpm run build`
   - Verify dist/assets/ has 15+ JS chunks (not just 1)
   - Measure main chunk size (target: <200 KB gzip)
   - Document chunk sizes in build output
@@ -614,7 +614,7 @@ Wave FINAL (After ALL tasks):
   - Target: 15+ chunks after optimization
 
   **Acceptance Criteria**:
-  - [ ] Build succeeds with `npm run build`
+  - [ ] Build succeeds with `pnpm run build`
   - [ ] dist/assets/ contains 15+ JS files
   - [ ] Main chunk <200 KB gzip (or significantly reduced from 436 KB)
   - [ ] No build errors or warnings (except expected chunk size warnings)
@@ -626,7 +626,7 @@ Wave FINAL (After ALL tasks):
     Tool: Bash
     Preconditions: Tasks 1-9 completed
     Steps:
-      1. Run `npm run build 2>&1 | tee .sisyphus/evidence/task-10-build.log`
+      1. Run `pnpm run build 2>&1 | tee .sisyphus/evidence/task-10-build.log`
       2. List files: `ls -la dist/assets/*.js | wc -l`
       3. Check main chunk size: `ls -lh dist/assets/index-*.js`
     Expected Result: 15+ JS files, main chunk significantly smaller
@@ -641,13 +641,13 @@ Wave FINAL (After ALL tasks):
   **Commit**: YES
   - Message: `test(build): verify code splitting and chunk output`
   - Files: Build output verification only
-  - Pre-commit: `npm run build`
+  - Pre-commit: `pnpm run build`
 
 - [ ] 11. Run lint and typecheck verification
 
   **What to do**:
-  - Run `npm run lint` - verify no new lint errors
-  - Run `npm run typecheck` - verify no TypeScript errors
+  - Run `pnpm run lint` - verify no new lint errors
+  - Run `pnpm run typecheck` - verify no TypeScript errors
   - Check that lazy() imports don't cause type errors
 
   **Recommended Agent Profile**:
@@ -659,16 +659,16 @@ Wave FINAL (After ALL tasks):
   - **Blocked By**: Tasks 1-9
 
   **Acceptance Criteria**:
-  - [ ] `npm run lint` passes with no new errors
-  - [ ] `npm run typecheck` passes
+  - [ ] `pnpm run lint` passes with no new errors
+  - [ ] `pnpm run typecheck` passes
 
   **QA Scenarios**:
   ```
   Scenario: Lint and typecheck pass
     Tool: Bash
     Steps:
-      1. Run `npm run lint 2>&1 | tee .sisyphus/evidence/task-11-lint.txt`
-      2. Run `npm run typecheck 2>&1 | tee .sisyphus/evidence/task-11-typecheck.txt`
+      1. Run `pnpm run lint 2>&1 | tee .sisyphus/evidence/task-11-lint.txt`
+      2. Run `pnpm run typecheck 2>&1 | tee .sisyphus/evidence/task-11-typecheck.txt`
     Expected Result: Both pass with no errors
     Evidence: .sisyphus/evidence/task-11-lint.txt, task-11-typecheck.txt
   ```
@@ -732,7 +732,7 @@ Wave FINAL (After ALL tasks):
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
 - [ ] F2. **Code Quality Review** — `unspecified-high`
-  Run `tsc --noEmit` + linter + `npm run build`. Review all changed files for: `as any`, `@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names (data/result/item/temp).
+  Run `tsc --noEmit` + linter + `pnpm run build`. Review all changed files for: `as any`, `@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names (data/result/item/temp).
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Tests [N pass/N fail] | Files [N clean/N issues] | VERDICT`
 
 - [ ] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill if UI)
@@ -747,8 +747,8 @@ Wave FINAL (After ALL tasks):
 
 ## Commit Strategy
 
-- **1**: `chore(build): add manualChunks to vite.config.ts` - vite.config.ts, npm run build
-- **2-9**: `refactor(router): lazy-load all page components with React.lazy()` - src/router/AppRouter.tsx, src/components/shared/LoadingFallback.tsx, npm run lint
+- **1**: `chore(build): add manualChunks to vite.config.ts` - vite.config.ts, pnpm run build
+- **2-9**: `refactor(router): lazy-load all page components with React.lazy()` - src/router/AppRouter.tsx, src/components/shared/LoadingFallback.tsx, pnpm run lint
 - **10-12**: `test(build): verify code splitting and route loading` - dist/assets/ verification
 
 ---
@@ -757,9 +757,9 @@ Wave FINAL (After ALL tasks):
 
 ### Verification Commands
 ```bash
-npm run build  # Expected: Multiple JS chunks, main chunk <200 KB gzip
-npm run lint   # Expected: No new warnings or errors
-npm run typecheck  # Expected: No type errors
+pnpm run build  # Expected: Multiple JS chunks, main chunk <200 KB gzip
+pnpm run lint   # Expected: No new warnings or errors
+pnpm run typecheck  # Expected: No type errors
 ```
 
 ### Final Checklist

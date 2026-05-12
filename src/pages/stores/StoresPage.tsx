@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAllStores, useReactivateStore, useDeleteStore, useCreateStore, useUpdateStore } from '@/hooks/useStores'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Store, Warehouse, Edit, Trash2, Settings, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/lib/toast'
 import { showErrorToast } from '@/lib/errorToast'
-import { Skeleton } from '@/components/ui/skeleton'
 import type { CreateStoreInput } from '@/api/stores'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
@@ -73,30 +71,37 @@ export function StoresPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tiendas</h1>
-          <p className="text-muted-foreground">Gestiona tus tiendas y puntos de venta</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Tiendas</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+            Gestiona tus tiendas y puntos de venta
+          </p>
         </div>
-        {hasPermission(PERMISSIONS.STORE_CREATE) && (
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Tienda
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasPermission(PERMISSIONS.STORE_CREATE) && (
+            <Button onClick={() => handleOpenForm()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Tienda
+            </Button>
+          )}
+        </div>
       </div>
-
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[180px] w-full" />
+            <div key={i} className="h-[180px] rounded-xl border border-border/60 bg-card/60 animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {stores?.map((store) => (
-            <Card key={store.id} className="p-4">
+            <div key={store.id} className="rounded-xl border border-border/60 bg-card/80 p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -151,7 +156,7 @@ export function StoresPage() {
                   </Button>
                 )}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

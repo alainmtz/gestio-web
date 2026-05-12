@@ -8,7 +8,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -257,7 +256,7 @@ export function MovementsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="h-10 w-48 bg-muted animate-pulse rounded" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -269,11 +268,14 @@ export function MovementsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Movimientos de Stock</h1>
-          <p className="text-muted-foreground">Historial de movimientos de inventario</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Movimientos de Stock</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">Historial de movimientos de inventario</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           {hasPermission(PERMISSIONS.INVENTORY_ADJUST) && (
@@ -448,14 +450,11 @@ export function MovementsPage() {
         </Select>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ArrowLeftRight className="h-5 w-5" />
-            Registro de Movimientos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+          <ArrowLeftRight className="h-3.5 w-3.5 inline mr-1.5" />
+          Registro de Movimientos
+        </p>
           <div className="space-y-3">
             {filteredMovements.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -515,8 +514,7 @@ export function MovementsPage() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Edit Movement Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

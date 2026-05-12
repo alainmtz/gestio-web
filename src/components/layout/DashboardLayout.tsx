@@ -15,6 +15,27 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider>
+      {/* Background grid pattern + glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+        {/* Gradient glow */}
+        <div
+          className="absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 opacity-[0.04]"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, hsl(var(--primary) / 0.3) 0%, transparent 70%)',
+          }}
+        />
+        {/* Grid lines */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+          }}
+        />
+      </div>
+
       <AppSidebar />
       <SidebarInset className="flex flex-col overflow-hidden">
         <Header />

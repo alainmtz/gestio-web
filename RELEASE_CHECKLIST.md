@@ -11,10 +11,10 @@ Fecha de creación: 24 de abril de 2026
 
 ## Validación técnica
 
-- [x] `npm run lint -- --quiet` → exit 0, sin errores ni warnings (27/04/2026)
-- [x] `npm run typecheck` → exit 0, 0 errores de tipos (27/04/2026)
-- [x] `npm run test -- --run` → 18 archivos PASS, 199 tests PASS (27/04/2026)
-- [x] `npm run build` → exit 0, bundle ~1.64 MB (JS: 1.60 MB, CSS: 34.91 KB) (27/04/2026)
+- [x] `pnpm run lint -- --quiet` → exit 0, sin errores ni warnings (27/04/2026)
+- [x] `pnpm run typecheck` → exit 0, 0 errores de tipos (27/04/2026)
+- [x] `pnpm run test -- --run` → 18 archivos PASS, 199 tests PASS (27/04/2026)
+- [x] `pnpm run build` → exit 0, bundle ~1.64 MB (JS: 1.60 MB, CSS: 34.91 KB) (27/04/2026)
 
 ## Validación funcional rápida
 

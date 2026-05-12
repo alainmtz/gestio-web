@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -217,11 +216,14 @@ export function TransfersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Transferencias</h1>
-          <p className="text-muted-foreground">Transferencias de stock entre tiendas</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Transferencias</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">Transferencias de stock entre tiendas</p>
         </div>
         {hasPermission(PERMISSIONS.MOVEMENT_CREATE) && (
           <Button onClick={() => setDialogOpen(true)}>
@@ -254,10 +256,9 @@ export function TransfersPage() {
         </Select>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
           {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" /></div>
           ) : filteredTransfers.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ArrowLeftRight className="mx-auto h-12 w-12 mb-3 text-muted-foreground/50" />
@@ -299,8 +300,7 @@ export function TransfersPage() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

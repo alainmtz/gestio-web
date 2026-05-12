@@ -1,5 +1,5 @@
 {
-  "name": "gestio-web",
+  "packageManager": "pnpm@11.1.0",
   "version": "1.0.0",
   "description": "Gestio v2 - Sistema CRM Empresarial Web",
   "type": "module",

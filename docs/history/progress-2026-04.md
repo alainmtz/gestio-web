@@ -16,10 +16,10 @@
 - React 19 type compatibility for tests
 
 **Final validation (27/04/2026):**
-- `npm run lint -- --quiet` → OK
-- `npm run typecheck` → OK
-- `npm run test -- --run` → 18 files PASS, 199 tests PASS
-- `npm run build` → exit 0, JS 1.60 MB / 425 KB gzip
+- `pnpm run lint -- --quiet` → OK
+- `pnpm run typecheck` → OK
+- `pnpm run test -- --run` → 18 files PASS, 199 tests PASS
+- `pnpm run build` → exit 0, JS 1.60 MB / 425 KB gzip
 
 ### Session 28 April 2026
 

@@ -98,11 +98,14 @@ export function CategoriesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categorías</h1>
-          <p className="text-muted-foreground">Organiza tus productos por categorías</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Categorías</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">Organiza tus productos por categorías</p>
         </div>
         {hasPermission(PERMISSIONS.PRODUCT_CREATE) && (
           <Button onClick={() => handleOpenDialog()}>
@@ -112,57 +115,47 @@ export function CategoriesPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tags className="h-5 w-5" />
-            Lista de Categorías ({categories?.length || 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : categories && categories.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {categories.map((category) => (
-                <div key={category.id} className="rounded-lg border p-4 hover:bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{category.name}</h3>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    {hasPermission(PERMISSIONS.PRODUCT_EDIT) && (
-                      <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(category)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {hasPermission(PERMISSIONS.PRODUCT_DELETE) && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive"
-                        onClick={() => handleDelete(category.id)}
-                        disabled={isDeleting === category.id}
-                      >
-                        {isDeleting === category.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+          <Tags className="h-3.5 w-3.5 inline mr-1.5" />
+          Lista de Categorías ({categories?.length || 0})
+        </p>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
+          </div>
+        ) : categories && categories.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((category) => (
+              <div key={category.id} className="rounded-lg border p-4 hover:bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">{category.name}</h3>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No hay categorías. Crea una para comenzar.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="mt-4 flex gap-2">
+                  {hasPermission(PERMISSIONS.PRODUCT_EDIT) && (
+                    <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(category)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {hasPermission(PERMISSIONS.PRODUCT_DELETE) && (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(category.id)} disabled={isDeleting === category.id}>
+                      {isDeleting === category.id ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-destructive" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            No hay categorías. Crea una para comenzar.
+          </div>
+        )}
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>

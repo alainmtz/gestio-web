@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Save, Loader2, Trash2, Plus, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Trash2, Plus, ClipboardList, FileText, DollarSign, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { productSchema, type ProductFormData } from '@/schemas'
 import { getProduct, createProduct, updateProduct, deleteProduct, getCategories, type Product } from '@/api/products'
@@ -180,8 +180,8 @@ export function ProductDetailPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="flex items-center justify-between">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex items-center gap-4">
           <Link to="/inventory/products">
             <Button variant="ghost" size="icon">
@@ -189,8 +189,9 @@ export function ProductDetailPage() {
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">
                 {isNew ? 'Nuevo Producto' : 'Editar Producto'}
               </h1>
               {!isNew && product?.is_consignment && (
@@ -200,12 +201,12 @@ export function ProductDetailPage() {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
               {isNew ? 'Crea un nuevo producto en tu inventario' : 'Edita los detalles del producto'}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {!isNew && hasPermission(PERMISSIONS.PRODUCT_DELETE) && (
             <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting || isSubmitting}>
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
@@ -224,12 +225,13 @@ export function ProductDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Información General</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      VX|      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <FileText className="h-3.5 w-3.5 inline mr-1.5" />
+            Información General
+          </p>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del producto *</Label>
               <Input id="name" {...register('name')} placeholder="Ej: Camisa Manga Larga" />
@@ -263,14 +265,15 @@ export function ProductDetailPage() {
               <Label htmlFor="description">Descripción</Label>
               <Textarea id="description" {...register('description')} placeholder="Descripción del producto" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Precios y Stock</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <DollarSign className="h-3.5 w-3.5 inline mr-1.5" />
+            Precios y Stock
+          </p>
+          <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="price">Precio de venta *</Label>
@@ -299,57 +302,56 @@ export function ProductDetailPage() {
               <Label htmlFor="tax_rate">Tasa de impuesto (%)</Label>
               <Input id="tax_rate" type="number" step="0.01" {...register('tax_rate')} placeholder="0" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {!isNew && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Stock por Tienda</CardTitle>
-              <Link to={`/inventory/movements?productId=${id}&action=opening`}>
-                <Button type="button" size="sm" variant="outline">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Agregar Stock
-                </Button>
-              </Link>
+      MX|      {!isNew && (
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase">
+              <Package className="h-3.5 w-3.5 inline mr-1.5" />
+              Stock por Tienda
+            </p>
+            <Link to={`/inventory/movements?productId=${id}&action=opening`}>
+              <Button type="button" size="sm" variant="outline">
+                <Plus className="h-3 w-3 mr-1" />
+                Agregar Stock
+              </Button>
+            </Link>
+          </div>
+          {inventoryData && inventoryData.length > 0 ? (
+            <div className="rounded-md border">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Tienda</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Disponible</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Reservado</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Mínimo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {inventoryData.map((inv) => {
+                    const store = stores?.find(s => s.id === inv.store_id)
+                    return (
+                      <tr key={inv.store_id}>
+                        <td className="px-4 py-2">{store?.name || inv.store_id}</td>
+                        <td className="px-4 py-2 text-right">{inv.quantity}</td>
+                        <td className="px-4 py-2 text-right">{inv.reserved_quantity}</td>
+                        <td className="px-4 py-2 text-right">{inv.min_quantity}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-          </CardHeader>
-          <CardContent>
-            {inventoryData && inventoryData.length > 0 ? (
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Tienda</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Disponible</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Reservado</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Mínimo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {inventoryData.map((inv) => {
-                      const store = stores?.find(s => s.id === inv.store_id)
-                      return (
-                        <tr key={inv.store_id}>
-                          <td className="px-4 py-2">{store?.name || inv.store_id}</td>
-                          <td className="px-4 py-2 text-right">{inv.quantity}</td>
-                          <td className="px-4 py-2 text-right">{inv.reserved_quantity}</td>
-                          <td className="px-4 py-2 text-right">{inv.min_quantity}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center py-8 text-muted-foreground">
-                Sin stock registrado. Usa el botón "Agregar Stock" para añadir inventario inicial.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              Sin stock registrado. Usa el botón "Agregar Stock" para añadir inventario inicial.
+            </p>
+          )}
+        </div>
       )}
     </form>
   )

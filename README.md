@@ -9,9 +9,9 @@ Web port of the [Gestio Android app](https://github.com/alainmtz/gestio-android)
 ```bash
 git clone https://github.com/alainmtz/gestio-web.git
 cd gestio-web
-npm install
+pnpm install
 cp .env.example .env  # edit with your Supabase credentials
-npm run dev
+pnpm run dev
 ```
 
 The app starts at `http://localhost:3000`. See [SETUP.md](./SETUP.md) for full instructions.
@@ -87,13 +87,13 @@ src/
 ## Development
 
 ```bash
-npm run dev          # Start dev server
-npm run build        # Production build
-npm run preview      # Preview production build
-npm run lint         # ESLint
-npm run typecheck    # TypeScript type check
-npm run test         # Run Vitest tests
-npm run test:watch   # Watch mode
+pnpm run dev          # Start dev server
+pnpm run build        # Production build
+pnpm run preview      # Preview production build
+pnpm run lint         # ESLint
+pnpm run typecheck    # TypeScript type check
+pnpm run test         # Run Vitest tests
+pnpm run test:watch   # Watch mode
 ```
 
 ## Permission Model

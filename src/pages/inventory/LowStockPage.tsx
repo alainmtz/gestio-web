@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
@@ -129,44 +128,43 @@ export function LowStockPage() {
   const warningCount = (lowStockItems || []).filter(i => i.quantity > 0).length
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Alertas de Stock Bajo</h1>
-        <p className="text-muted-foreground">Productos con inventario por debajo del umbral</p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Alertas de Stock Bajo</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">Productos con inventario por debajo del umbral</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-destructive/10 p-2"><AlertTriangle className="h-5 w-5 text-destructive" /></div>
-              <div><p className="text-sm text-muted-foreground">Sin stock</p><p className="text-2xl font-bold text-destructive">{criticalCount}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-amber-500/10 p-2"><Package className="h-5 w-5 text-amber-500" /></div>
-              <div><p className="text-sm text-muted-foreground">Stock bajo</p><p className="text-2xl font-bold text-amber-500">{warningCount}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-2"><Store className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-sm text-muted-foreground">Total alertas</p><p className="text-2xl font-bold">{(lowStockItems || []).length}</p></div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-destructive/10 p-2"><AlertTriangle className="h-5 w-5 text-destructive" /></div>
+            <div><p className="text-sm text-muted-foreground">Sin stock</p><p className="text-2xl font-bold text-destructive">{criticalCount}</p></div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-amber-500/10 p-2"><Package className="h-5 w-5 text-amber-500" /></div>
+            <div><p className="text-sm text-muted-foreground">Stock bajo</p><p className="text-2xl font-bold text-amber-500">{warningCount}</p></div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-primary/10 p-2"><Store className="h-5 w-5 text-primary" /></div>
+            <div><p className="text-sm text-muted-foreground">Total alertas</p><p className="text-2xl font-bold">{(lowStockItems || []).length}</p></div>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Productos con stock bajo</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+          <AlertTriangle className="h-3.5 w-3.5 inline mr-1.5" />
+          Productos con stock bajo
+        </p>
           <div className="flex flex-wrap gap-3 mb-4">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -232,8 +230,7 @@ export function LowStockPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }

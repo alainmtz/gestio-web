@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -365,8 +365,8 @@ export function POSPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               Debes abrir una sesión de caja desde el módulo de Caja registradora antes de usar el POS.
             </p>
-            <Button className="mt-4" onClick={() => navigate('/cash-register/sessions')}>
-              Ir a Caja
+            <Button className="mt-4" asChild>
+              <Link to="/cash-register/sessions">Ir a Caja</Link>
             </Button>
           </CardContent>
         </Card>

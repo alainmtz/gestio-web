@@ -142,8 +142,8 @@ export function CustomerDetailPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="flex items-center justify-between">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex items-center gap-4">
           <Link to="/customers/list">
             <Button variant="ghost" size="icon">
@@ -151,15 +151,18 @@ export function CustomerDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {isNew ? 'Nuevo Cliente' : 'Editar Cliente'}
-            </h1>
-            <p className="text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">
+                {isNew ? 'Nuevo Cliente' : 'Editar Cliente'}
+              </h1>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
               {isNew ? 'Crea un nuevo cliente' : 'Edita los detalles del cliente'}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {!isNew && hasPermission(PERMISSIONS.CUSTOMER_DELETE) && (
             <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting || isSubmitting}>
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
@@ -179,11 +182,11 @@ export function CustomerDetailPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Información Personal</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            Información Personal
+          </p>
+          <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
@@ -224,14 +227,14 @@ export function CustomerDetailPage() {
                 <Input id="phone" {...register('phone')} placeholder="+53 5 1234567" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Crédito y Notas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            Crédito y Notas
+          </p>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="credit_limit">Límite de Crédito</Label>
               <Input id="credit_limit" type="number" {...register('credit_limit')} placeholder="0.00" />
@@ -240,16 +243,16 @@ export function CustomerDetailPage() {
               <Label htmlFor="notes">Notas</Label>
               <Textarea id="notes" {...register('notes')} placeholder="Notas adicionales sobre el cliente" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {!isNew && customer && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Información Adicional</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            Información Adicional
+          </p>
+          <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label className="text-muted-foreground">Balance Actual</Label>
@@ -260,8 +263,8 @@ export function CustomerDetailPage() {
                 <p className="text-lg">{customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '-'}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </form>
   )

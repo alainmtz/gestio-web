@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { ChevronDown, LogOut, Store, User, Building2, Settings, Users, Key, CreditCard, PanelLeft, Clock } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -62,15 +62,16 @@ function MobileOrgPopover() {
               <>
                 <div className="border-t my-1" />
                 {pendingOrganizations.map((org) => (
-                  <button
+                  <Link
                     key={org.id}
-                    onClick={() => { setOpen(false); navigate('/settings/members') }}
+                    to="/settings/members"
+                    onClick={() => setOpen(false)}
                     className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent transition-colors truncate"
                   >
                     <Clock className="h-3 w-3 text-amber-500 flex-shrink-0" />
                     <span className="truncate">{org.name}</span>
                     <span className="ml-auto text-xs text-amber-600 flex-shrink-0">Pendiente</span>
-                  </button>
+                  </Link>
                 ))}
               </>
             )}
@@ -134,20 +135,20 @@ function MobileUserPopover() {
           <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
         </div>
         <div className="p-2 space-y-0.5">
-          <button
-            onClick={() => { navigate('/settings/profile') }}
+          <Link
+            to="/settings/profile"
             className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors"
           >
             <User className="h-4 w-4" />
             Mi Perfil
-          </button>
-          <button
-            onClick={() => { navigate('/settings') }}
+          </Link>
+          <Link
+            to="/settings"
             className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors"
           >
             <Settings className="h-4 w-4" />
             Configuración
-          </button>
+          </Link>
         </div>
         <div className="p-2 border-t">
           <button
@@ -195,7 +196,9 @@ function DesktopHeaderBar() {
   }
 
   return (
-    <div className="hidden h-16 items-center justify-between border-b bg-card px-6 md:flex">
+    <div className="relative hidden h-16 items-center justify-between border-b border-border/60 bg-card/90 px-6 md:flex">
+      {/* Top accent line */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <div className="flex items-center gap-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -224,14 +227,12 @@ function DesktopHeaderBar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-muted-foreground">Pendientes</DropdownMenuLabel>
                 {pendingOrganizations.map((org) => (
-                  <DropdownMenuItem
-                    key={org.id}
-                    onClick={() => navigate('/settings/members')}
-                    className="opacity-70"
-                  >
-                    <Clock className="mr-2 h-3 w-3 text-amber-500" />
-                    <span>{org.name}</span>
-                    <span className="ml-auto text-xs text-amber-600">Pendiente</span>
+                  <DropdownMenuItem key={org.id} asChild className="opacity-70">
+                    <Link to="/settings/members">
+                      <Clock className="mr-2 h-3 w-3 text-amber-500" />
+                      <span>{org.name}</span>
+                      <span className="ml-auto text-xs text-amber-600">Pendiente</span>
+                    </Link>
                   </DropdownMenuItem>
                 ))}
               </>
@@ -281,25 +282,35 @@ function DesktopHeaderBar() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Configuración</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-              <User className="mr-2 h-4 w-4" />
-              Mi Perfil
+            <DropdownMenuItem asChild>
+              <Link to="/settings/profile">
+                <User className="mr-2 h-4 w-4" />
+                Mi Perfil
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings/organization')}>
-              <Building2 className="mr-2 h-4 w-4" />
-              Organización
+            <DropdownMenuItem asChild>
+              <Link to="/settings/organization">
+                <Building2 className="mr-2 h-4 w-4" />
+                Organización
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings/members')}>
-              <Users className="mr-2 h-4 w-4" />
-              Miembros
+            <DropdownMenuItem asChild>
+              <Link to="/settings/members">
+                <Users className="mr-2 h-4 w-4" />
+                Miembros
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings/permissions')}>
-              <Key className="mr-2 h-4 w-4" />
-              Permisos
+            <DropdownMenuItem asChild>
+              <Link to="/settings/permissions">
+                <Key className="mr-2 h-4 w-4" />
+                Permisos
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings/exchange')}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Tasas de Cambio
+            <DropdownMenuItem asChild>
+              <Link to="/settings/exchange">
+                <CreditCard className="mr-2 h-4 w-4" />
+                Tasas de Cambio
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -324,13 +335,17 @@ function DesktopHeaderBar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-              <User className="mr-2 h-4 w-4" />
-              Mi Perfil
+            <DropdownMenuItem asChild>
+              <Link to="/settings/profile">
+                <User className="mr-2 h-4 w-4" />
+                Mi Perfil
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
-              <Building2 className="mr-2 h-4 w-4" />
-              Configuración
+            <DropdownMenuItem asChild>
+              <Link to="/settings">
+                <Building2 className="mr-2 h-4 w-4" />
+                Configuración
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">

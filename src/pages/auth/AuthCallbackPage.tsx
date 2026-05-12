@@ -114,10 +114,134 @@ export function AuthCallbackPage() {
 
       navigate('/dashboard', { replace: true })
     } else {
-      // New user (likely from Google OAuth) — complete registration
+      // ── New user — check for pending invitations ──
+      let inviteToAccept: { id: string; organization_id: string; role: string; email: string } | null = null
+
+      // 1. Check localStorage for explicit invitation token (from AcceptInvitationPage Google button)
+      const pendingToken = localStorage.getItem('pending_invitation_token')
+      if (pendingToken) {
+        localStorage.removeItem('pending_invitation_token')
+        const { data: invite } = await supabase
+          .from('organization_invitations')
+          .select('id, organization_id, role, email, expires_at, accepted_at')
+          .eq('invitation_token', pendingToken)
+          .single()
+
+        if (invite && !invite.accepted_at && new Date(invite.expires_at) > new Date()) {
+          inviteToAccept = invite
+        }
+      }
+
+      // 2. If no token match, check by email (direct Google sign-up with pending invite)
+      if (!inviteToAccept) {
+        const userEmail = session.user.email?.toLowerCase()
+        if (userEmail) {
+          const { data: pendingInvites } = await supabase
+            .from('organization_invitations')
+            .select('id, organization_id, role, email, expires_at, accepted_at')
+            .eq('email', userEmail)
+            .is('accepted_at', null)
+            .gt('expires_at', new Date().toISOString())
+
+          if (pendingInvites && pendingInvites.length > 0) {
+            inviteToAccept = pendingInvites[0]
+          }
+        }
+      }
+
+      if (inviteToAccept) {
+        // ── Auto-accept invitation ──
+        const userId = session.user.id
+        const userMeta = session.user.user_metadata || {}
+
+        await supabase.from('profiles').upsert({
+          id: userId,
+          full_name: userMeta.full_name || userMeta.name || session.user.email?.split('@')[0] || 'Usuario',
+          avatar_url: userMeta.avatar_url || userMeta.picture || null,
+        })
+
+        await supabase.from('organization_members').insert({
+          user_id: userId,
+          organization_id: inviteToAccept.organization_id,
+          role: inviteToAccept.role,
+          is_active: true,
+        })
+
+        await supabase.from('organization_invitations')
+          .update({ accepted_at: new Date().toISOString() })
+          .eq('id', inviteToAccept.id)
+
+        // Notify owners
+        const { data: owners } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', inviteToAccept.organization_id)
+          .eq('role', 'owner')
+          .neq('user_id', userId)
+
+        if (owners && owners.length > 0) {
+          await supabase.from('notifications').insert(
+            owners.map((o: any) => ({
+              user_id: o.user_id,
+              organization_id: inviteToAccept!.organization_id,
+              type: 'member_joined',
+              title: 'Nuevo miembro',
+              message: `${inviteToAccept.email} se ha unido a la organización como ${inviteToAccept.role === 'owner' ? 'Propietario' : inviteToAccept.role === 'admin' ? 'Administrador' : 'Miembro'}.`,
+              href: '/settings/members',
+              metadata: {
+                member_email: inviteToAccept.email,
+                member_role: inviteToAccept.role,
+                joined_at: new Date().toISOString(),
+              },
+            }))
+          )
+        }
+
+        // Fetch org data
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', inviteToAccept.organization_id)
+          .single()
+
+        if (orgData) {
+          const user: User = {
+            id: userId,
+            email: inviteToAccept.email,
+            fullName: userMeta.full_name || userMeta.name || session.user.email?.split('@')[0] || 'Usuario',
+            avatarUrl: userMeta.avatar_url || userMeta.picture || undefined,
+            role: inviteToAccept.role,
+          }
+
+          const organizations: Organization[] = [{
+            id: orgData.id,
+            name: orgData.name,
+            slug: orgData.slug,
+            taxId: orgData.tax_id || undefined,
+            plan: orgData.plan,
+            logoUrl: orgData.logo_url || undefined,
+          }]
+
+          login(user, {
+            accessToken: session.access_token,
+            expiresAt: session.expires_at || Date.now() + 3600000,
+          }, organizations)
+
+          // Store onboarding info for welcome banner
+          sessionStorage.setItem('gestio_joined_org', JSON.stringify({
+            name: orgData.name,
+            role: inviteToAccept.role,
+          }))
+
+          navigate('/dashboard', { replace: true })
+          return
+        }
+      }
+
+      // No pending invitation — standard OAuth registration flow
       navigate('/auth/register?oauth_flow=true', { replace: true })
-    }
   }
+}
 
   if (error) {
     return (

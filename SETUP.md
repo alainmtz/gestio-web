@@ -3,7 +3,7 @@
 ## Requisitos Previos
 
 - **Node.js** >= 20.x
-- **npm** >= 10.x
+- **pnpm** >= 8.x
 - **Supabase project** (local o cloud)
 
 ## 1. Clonar y Configurar
@@ -24,7 +24,7 @@ VITE_SUPABASE_ANON_KEY=tu-clave-anon
 ## 2. Instalar Dependencias
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## 3. Base de Datos
@@ -34,14 +34,14 @@ npm install
 1. Crea un proyecto en [supabase.com](https://supabase.com)
 2. Aplica las migraciones:
    ```bash
-   npx supabase db push
+   pnpm exec supabase db push
    ```
    O ejecuta `supabase/migrations/20260122153500_complete_schema.sql` en el SQL editor.
 
 ### Opción B: Supabase Local
 
 ```bash
-npm install -g supabase
+pnpm add -g supabase
 supabase init
 supabase start
 ```
@@ -50,23 +50,23 @@ supabase start
 
 ```bash
 # Desarrollo
-npm run dev
+pnpm run dev
 
 # Build
-npm run build
+pnpm run build
 
 # Preview del build
-npm run preview
+pnpm run preview
 
 # Type check
-npm run typecheck
+pnpm run typecheck
 
 # Lint
-npm run lint
+pnpm run lint
 
 # Tests
-npm run test
-npm run test:watch
+pnpm run test
+pnpm run test:watch
 ```
 
 La app arranca en `http://localhost:3000`

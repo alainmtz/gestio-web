@@ -1,10 +1,8 @@
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ShieldX } from 'lucide-react'
 
 export function UnauthorizedPage() {
-  const navigate = useNavigate()
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
@@ -16,7 +14,9 @@ export function UnauthorizedPage() {
           No tienes permisos para ver esta página. Contacta al administrador si crees que es un error.
         </p>
       </div>
-      <Button onClick={() => navigate('/dashboard')}>Volver al dashboard</Button>
+      <Button asChild>
+        <Link to="/dashboard">Volver al dashboard</Link>
+      </Button>
     </div>
   )
 }

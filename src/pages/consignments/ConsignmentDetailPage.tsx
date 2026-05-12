@@ -354,22 +354,25 @@ export function ConsignmentDetailPage() {
   const isCompleted = ['COMPLETED', 'LIQUIDATED', 'CANCELLED'].includes(row.status)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex items-center gap-4">
           <Link to="/consignments/list">
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {row.product?.name || 'Consignación'}
-            </h1>
-            <p className="text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">
+                {row.product?.name || 'Consignación'}
+              </h1>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
               {row.customer?.name || row.supplier?.name || row.partner_id} · {row.store?.name} · {row.sent_date}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {hasPermission(PERMISSIONS.CONSIGNMENT_EDIT) && !isCompleted && (
             <>
               <Button variant="outline" onClick={() => setShowReturnDialog(true)}>
@@ -391,37 +394,28 @@ export function ConsignmentDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Enviado</div>
-            <div className="text-2xl font-bold">{row.quantity_sent}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Vendido</div>
-            <div className="text-2xl font-bold text-green-600">{row.quantity_sold}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Devuelto</div>
-            <div className="text-2xl font-bold text-orange-600">{row.quantity_returned}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Disponible</div>
-            <div className="text-2xl font-bold text-blue-600">{available}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Comisión</div>
-            <div className="text-2xl font-bold">{row.commission_rate}%</div>
-          </CardContent>
-        </Card>
+      MZ|      <div className="grid gap-4 md:grid-cols-5">
+<div className="rounded-xl border border-border/60 bg-card/80 p-4">
+<div className="text-sm text-muted-foreground">Enviado</div>
+<div className="text-2xl font-bold">{row.quantity_sent}</div>
+          </div>
+<div className="rounded-xl border border-border/60 bg-card/80 p-4">
+<div className="text-sm text-muted-foreground">Vendido</div>
+<div className="text-2xl font-bold text-green-600">{row.quantity_sold}</div>
+          </div>
+<div className="rounded-xl border border-border/60 bg-card/80 p-4">
+<div className="text-sm text-muted-foreground">Devuelto</div>
+<div className="text-2xl font-bold text-orange-600">{row.quantity_returned}</div>
+          </div>
+<div className="rounded-xl border border-border/60 bg-card/80 p-4">
+<div className="text-sm text-muted-foreground">Disponible</div>
+<div className="text-2xl font-bold text-blue-600">{available}</div>
+          </div>
+<div className="rounded-xl border border-border/60 bg-card/80 p-4">
+<div className="text-sm text-muted-foreground">Comisión</div>
+<div className="text-2xl font-bold">{row.commission_rate}%</div>
+          </div>
+</div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

@@ -130,60 +130,28 @@ export function ConsignmentPartnersPage() {
     }
 
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {partners.map((partner) => (
-          <Card key={partner.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{partner.name}</h3>
-                  {partner.code && (
-                    <p className="text-sm text-muted-foreground font-mono">{partner.code}</p>
-                  )}
-                </div>
-                <Badge variant={partner.type === 'CUSTOMER' ? 'default' : 'secondary'}>
-                  {partner.type === 'CUSTOMER' ? 'Cliente' : 'Proveedor'}
-                </Badge>
-              </div>
-
-              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-                {partner.email && <span>{partner.email}</span>}
-                {partner.phone && <span>{partner.phone}</span>}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between pt-3 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{partner.activeConsignments} consignación{partner.activeConsignments > 1 ? 'es' : ''} activa{partner.activeConsignments > 1 ? 's' : ''}</span>
-                </div>
-                <Link to={`/consignments/list`}>
-                  <Button variant="ghost" size="sm">
-                    <Eye className="mr-1 h-3.5 w-3.5" />
-                    Ver
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+        {partners.map((partner) => (
+          <div key={partner.id} className="rounded-xl border border-border/60 bg-card/80 p-5 hover:shadow-md transition-shadow">
+SK|            
         ))}
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Socios de Consignación</h1>
-          <p className="text-muted-foreground">Clientes y proveedores con consignaciones activas</p>
-        </div>
-        <Link to="/consignments/list">
-          <Button>
-            <UsersRound className="mr-2 h-4 w-4" />
-            Ver Consignaciones
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-4">
+      PX|      <div className="flex flex-wrap items-end justify-between gap-2">
+YK|        <div>
+ZV|          <div className="flex items-center gap-2">
+NM|            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+RJ|            <h1 className="text-lg font-semibold tracking-tight">Socios de Consignación</h1>
+JQ|          </div>
+PZ|          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+TQ|            Clientes y proveedores con consignaciones activas
+XZ|          </p>
+WT|        </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

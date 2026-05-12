@@ -79,18 +79,25 @@ export function CustomersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
-          <p className="text-muted-foreground">Gestiona tus clientes</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Clientes</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+            Gestiona tus clientes
+          </p>
         </div>
-        {hasPermission(PERMISSIONS.CUSTOMER_CREATE) && (
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Cliente
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasPermission(PERMISSIONS.CUSTOMER_CREATE) && (
+            <Button onClick={() => handleOpenForm()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Cliente
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -105,18 +112,14 @@ export function CustomersPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Lista de Clientes ({total})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+          <Users className="h-3.5 w-3.5 inline mr-1.5" />Lista de Clientes ({total})
+        </p>
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 animate-pulse">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <div key={i} className="h-12 w-full bg-muted rounded-md" />
               ))}
             </div>
           ) : (
@@ -172,8 +175,7 @@ export function CustomersPage() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       <CustomerForm
         open={formOpen}

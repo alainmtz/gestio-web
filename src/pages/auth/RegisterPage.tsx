@@ -397,6 +397,10 @@ export function RegisterPage() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     setError(null)
+    // Save invitation token before OAuth redirect so AuthCallbackPage can pick it up
+    if (inviteToken) {
+      localStorage.setItem('pending_invitation_token', inviteToken)
+    }
     const redirectTo = window.location.origin + '/auth/callback'
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -510,6 +514,10 @@ export function RegisterPage() {
 
         setSubmitStatus('success')
         setLoading(false)
+        sessionStorage.setItem('gestio_joined_org', JSON.stringify({
+          name: inviteData.organization_name,
+          role: inviteData.role,
+        }))
         navigate('/dashboard')
       } else {
         const fullData = data as RegisterForm | OAuthForm

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, ClipboardList, ArrowUpRight, ArrowDownLeft, Eye, Loader2, AlertTriangle, Store, Package } from 'lucide-react'
+import { ArrowUpRight, ArrowDownLeft, Eye, Loader2, AlertTriangle, Store, Package } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
@@ -353,11 +352,16 @@ export function ConsignmentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Consignaciones</h1>
-          <p className="text-muted-foreground">Gestiona el stock en consignación</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Consignaciones</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+            Gestiona el stock en consignación
+          </p>
         </div>
         <div className="flex gap-2">
           {hasPermission(PERMISSIONS.CONSIGNMENT_CREATE) && (
@@ -388,35 +392,31 @@ export function ConsignmentsPage() {
         </TabsList>
 
         <TabsContent value="outbound">
-          <Card>
-            <CardContent className="p-6">
-              {isLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              ) : outboundConsignments.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No hay consignaciones de salida</div>
-              ) : (
-                <div className="space-y-3">
-                  {renderOutboundCards()}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-6">
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : outboundConsignments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No hay consignaciones de salida</div>
+            ) : (
+              <div className="space-y-3">
+                {renderOutboundCards()}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="inbound">
-          <Card>
-            <CardContent className="p-6">
-              {isLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              ) : inboundConsignments.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No hay consignaciones de entrada</div>
-              ) : (
-                <div className="space-y-3">
-                  {renderInboundCards()}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-6">
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : inboundConsignments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No hay consignaciones de entrada</div>
+            ) : (
+              <div className="space-y-3">
+                {renderInboundCards()}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

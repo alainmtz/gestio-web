@@ -168,14 +168,16 @@ export function SupplierDetailPage() {
 
   if (isNew) {
     return (
-      <div className="container py-8 space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/suppliers')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+      <div className="container py-8 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold">Nuevo Proveedor</h1>
-            <p className="text-muted-foreground">Completa los datos del proveedor</p>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">Nuevo Proveedor</h1>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground monospace">
+              Completa los datos del proveedor
+            </p>
           </div>
         </div>
         <Card className="max-w-2xl">
@@ -249,7 +251,9 @@ export function SupplierDetailPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => navigate('/suppliers')}>Cancelar</Button>
+                <Button type="button" variant="outline" asChild>
+                  <Link to="/suppliers">Cancelar</Link>
+                </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
                   {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Save className="mr-2 h-4 w-4" />
@@ -280,18 +284,18 @@ export function SupplierDetailPage() {
   }
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/suppliers')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{supplier.name}</h1>
-            <p className="text-muted-foreground">Código: {supplier.code}</p>
+    <div className="container py-8 space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">{supplier.name}</h1>
           </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">
+            Código: {supplier.code}
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {hasPermission(PERMISSIONS.SUPPLIER_EDIT) && (
             <Button variant="outline" onClick={() => setFormOpen(true)}>
               <Edit className="mr-2 h-4 w-4" />
@@ -309,14 +313,11 @@ export function SupplierDetailPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Información General
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <Building2 className="h-3.5 w-3.5 inline mr-1.5" />Información General
+          </p>
+          <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Estado</span>
               <Badge variant={supplier.is_active ? 'success' : 'secondary'}>
@@ -343,17 +344,14 @@ export function SupplierDetailPage() {
               <span className="text-muted-foreground">Balance Actual</span>
               <span>{supplier.current_balance ? `$${supplier.current_balance}` : '-'}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Contacto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <MapPin className="h-3.5 w-3.5 inline mr-1.5" />Contacto
+          </p>
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-muted-foreground" />
               <span>{supplier.email || '-'}</span>
@@ -370,30 +368,23 @@ export function SupplierDetailPage() {
               <p>{supplier.city}{supplier.state ? `, ${supplier.state}` : ''}</p>
               <p>{supplier.country} {supplier.postal_code}</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
       {!supplier.is_global && supplier.stores && supplier.stores.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
-              Tiendas que abastece
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {supplier.stores.map((store: any) => (
-                <Badge key={store.id} variant="outline">
-                  {store.name}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+          <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+            <Truck className="h-3.5 w-3.5 inline mr-1.5" />Tiendas que abastece
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {supplier.stores.map((store: any) => (
+              <Badge key={store.id} variant="outline">
+                {store.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
       )}
-
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
           <DialogHeader>

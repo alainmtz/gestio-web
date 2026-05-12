@@ -4,7 +4,6 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -460,145 +459,141 @@ export function InvoiceDetailPage() {
 
   // ── Product items form section (shared between new and edit mode) ──────────
   const renderItemsForm = () => (
-    <Card className="lg:col-span-2">
-      <CardHeader>
-        <CardTitle>Items de la Factura</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {fields.map((field, index) => {
-            const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
-            const hasProduct = !!items?.[index]?.product_id
-            return (
-              <div key={field.id} className="flex gap-2 items-start border p-2 rounded">
-                <div className="flex-1">
-                  <Popover
-                    open={openProductPopover === index}
-                    onOpenChange={(open) => {
-                      setOpenProductPopover(open ? index : null)
-                      if (!open) setProductSearch('')
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={cn('w-full justify-between text-left', !hasProduct && 'text-muted-foreground')}
-                        ref={popoverRef}
-                      >
-                        {hasProduct ? (
-                          <span className="flex items-center gap-2">
-                            <Package className="h-4 w-4" />
-                            <span>{items?.[index]?.description}</span>
-                            <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
-                          </span>
-                        ) : 'Buscar producto...'}
-                        <Search className="h-4 w-4 ml-2" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0" align="start" side="bottom" sideOffset={4} style={{ width: popoverRef.current?.offsetWidth }}>
-                      <div className="p-2 border-b">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input placeholder="Buscar productos..." className="pl-8" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} autoFocus />
-                        </div>
+    <div className="rounded-xl border border-border/60 bg-card/80 p-4 lg:col-span-2">
+      <h2 className="text-base font-semibold mb-3">Items de la Factura</h2>
+      <div className="space-y-2">
+        {fields.map((field, index) => {
+          const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
+          const hasProduct = !!items?.[index]?.product_id
+          return (
+            <div key={field.id} className="flex gap-2 items-start border p-2 rounded">
+              <div className="flex-1">
+                <Popover
+                  open={openProductPopover === index}
+                  onOpenChange={(open) => {
+                    setOpenProductPopover(open ? index : null)
+                    if (!open) setProductSearch('')
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn('w-full justify-between text-left', !hasProduct && 'text-muted-foreground')}
+                      ref={popoverRef}
+                    >
+                      {hasProduct ? (
+                        <span className="flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          <span>{items?.[index]?.description}</span>
+                          <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
+                        </span>
+                      ) : 'Buscar producto...'}
+                      <Search className="h-4 w-4 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" align="start" side="bottom" sideOffset={4} style={{ width: popoverRef.current?.offsetWidth }}>
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input placeholder="Buscar productos..." className="pl-8" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} autoFocus />
                       </div>
-                      <div className="max-h-64 overflow-y-auto">
-                        {productsData?.products?.map((product) => {
-                          const prodStock = getProductStock(product.id)
-                          return (
-                            <div key={product.id} className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer" onClick={() => addProduct(product, index)}>
-                              <div>
-                                <p className="font-medium text-sm">{product.name}</p>
-                                <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-medium text-sm">${product.price}</p>
-                                <p className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}>Stock: {prodStock}</p>
-                              </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {productsData?.products?.map((product) => {
+                        const prodStock = getProductStock(product.id)
+                        return (
+                          <div key={product.id} className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer" onClick={() => addProduct(product, index)}>
+                            <div>
+                              <p className="font-medium text-sm">{product.name}</p>
+                              <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
                             </div>
-                          )
-                        })}
-                        {productsData?.products?.length === 0 && (
-                          <div className="text-center py-4 text-muted-foreground text-sm">No se encontraron productos</div>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="w-20">
-                  <Label className="text-xs text-muted-foreground">Stock</Label>
-                  <Input value={stock} disabled className="text-center" />
-                </div>
-                <div className="w-20">
-                  <Label className="text-xs text-muted-foreground">Cant *</Label>
-                  <Input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} min={1} className="text-center" />
-                </div>
-                <div className="w-24">
-                  <Label className="text-xs text-muted-foreground">Precio</Label>
-                  <Input type="number" step="0.01" {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })} className="text-right" />
-                </div>
-                <div className="w-16">
-                  <Label className="text-xs text-muted-foreground">%Tax</Label>
-                  <Input type="number" {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })} className="text-center" />
-                </div>
-                <div className="w-16">
-                  <Label className="text-xs text-muted-foreground">%Desc</Label>
-                  <Input type="number" {...register(`items.${index}.discount_percentage` as const, { valueAsNumber: true })} className="text-center" />
-                </div>
-                <div className="w-20">
-                  <Label className="text-xs text-muted-foreground">Total</Label>
-                  <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-                <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
-                    className="w-16 text-center"
-                    placeholder="0"
-                  />
-                  <Select
-                    value={items?.[index]?.warranty_period || ''}
-                    onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
-                  >
-                    <SelectTrigger className="w-24">
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="days">Días</SelectItem>
-                      <SelectItem value="months">Meses</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                            <div className="text-right">
+                              <p className="font-medium text-sm">${product.price}</p>
+                              <p className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}>Stock: {prodStock}</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {productsData?.products?.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">No se encontraron productos</div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-            )
-          })}
+              <div className="w-20">
+                <Label className="text-xs text-muted-foreground">Stock</Label>
+                <Input value={stock} disabled className="text-center" />
+              </div>
+              <div className="w-20">
+                <Label className="text-xs text-muted-foreground">Cant *</Label>
+                <Input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} min={1} className="text-center" />
+              </div>
+              <div className="w-24">
+                <Label className="text-xs text-muted-foreground">Precio</Label>
+                <Input type="number" step="0.01" {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })} className="text-right" />
+              </div>
+              <div className="w-16">
+                <Label className="text-xs text-muted-foreground">%Tax</Label>
+                <Input type="number" {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })} className="text-center" />
+              </div>
+              <div className="w-16">
+                <Label className="text-xs text-muted-foreground">%Desc</Label>
+                <Input type="number" {...register(`items.${index}.discount_percentage` as const, { valueAsNumber: true })} className="text-center" />
+              </div>
+              <div className="w-20">
+                <Label className="text-xs text-muted-foreground">Total</Label>
+                <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+              <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
+                  className="w-16 text-center"
+                  placeholder="0"
+                />
+                <Select
+                  value={items?.[index]?.warranty_period || ''}
+                  onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="days">Días</SelectItem>
+                    <SelectItem value="months">Meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex justify-between items-center mt-4">
+        <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
+          <Plus className="mr-2 h-4 w-4" />
+          Agregar Item
+        </Button>
+        <div className="text-right">
+          <p className="text-sm">Subtotal: {formCurrencyCode} ${totals.subtotal.toFixed(2)}</p>
+          <p className="text-sm">Descuento: -{formCurrencyCode} ${totals.discount.toFixed(2)}</p>
+          <p className="text-sm">Impuesto: +{formCurrencyCode} ${totals.tax.toFixed(2)}</p>
+          <p className="font-bold text-lg">Total: {formCurrencyCode} ${totals.total.toFixed(2)}</p>
         </div>
-        <div className="flex justify-between items-center mt-4">
-          <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Item
-          </Button>
-          <div className="text-right">
-            <p className="text-sm">Subtotal: {formCurrencyCode} ${totals.subtotal.toFixed(2)}</p>
-            <p className="text-sm">Descuento: -{formCurrencyCode} ${totals.discount.toFixed(2)}</p>
-            <p className="text-sm">Impuesto: +{formCurrencyCode} ${totals.tax.toFixed(2)}</p>
-            <p className="font-bold text-lg">Total: {formCurrencyCode} ${totals.total.toFixed(2)}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 
   // ── NEW invoice form ───────────────────────────────────────────────────────
   if (isNew) {
     return (
-      <form onSubmit={handleSubmit(onSubmitNew)} className="container py-8 space-y-6">
+      <form onSubmit={handleSubmit(onSubmitNew)} className="container py-8 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/billing/invoices">
@@ -607,8 +602,8 @@ export function InvoiceDetailPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Nueva Factura</h1>
-              <p className="text-muted-foreground">Crea una nueva factura</p>
+              <h1 className="text-lg font-semibold">Nueva Factura</h1>
+              <p className="mt-0.5 text-xs text-muted-foreground font-mono">Crea una nueva factura</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -625,9 +620,9 @@ export function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           {renderItemsForm()}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {renderDetailsForm()}
             {renderTotalsCard()}
           </div>
@@ -639,15 +634,15 @@ export function InvoiceDetailPage() {
   // ── EDIT MODE ──────────────────────────────────────────────────────────────
   if (isEditing) {
     return (
-      <form onSubmit={handleSaveEdit} className="container py-8 space-y-6">
+      <form onSubmit={handleSaveEdit} className="container py-8 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" type="button" onClick={() => setIsEditing(false)}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Editando Factura {invoice?.number}</h1>
-              <p className="text-muted-foreground">Modo edición</p>
+              <h1 className="text-lg font-semibold">Editando Factura {invoice?.number}</h1>
+              <p className="mt-0.5 text-xs text-muted-foreground font-mono">Modo edición</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -660,9 +655,9 @@ export function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           {renderItemsForm()}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {renderDetailsForm()}
             {renderTotalsCard()}
           </div>
@@ -673,7 +668,7 @@ export function InvoiceDetailPage() {
 
   // ── READ-ONLY VIEW ─────────────────────────────────────────────────────────
   return (
-    <div className="container py-8 space-y-6">
+    <div className="container py-8 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/billing/invoices">
@@ -682,10 +677,13 @@ export function InvoiceDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-lg font-semibold flex items-center gap-2">
               Factura {invoice?.number || ''}
+              {invoice && (
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+              )}
             </h1>
-            <div className="text-muted-foreground flex items-center gap-2">
+            <div className="mt-0.5 text-xs text-muted-foreground font-mono flex items-center gap-2">
               {invoiceStatus && <Badge variant={invoiceStatus.variant}>{invoiceStatus.label}</Badge>}
               {invoice && `| Pago: ${invoice.payment_status}`}
             </div>
@@ -726,86 +724,74 @@ export function InvoiceDetailPage() {
         const roCurrencyCode = invoice.currency?.code || 'CUP'
         return (
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-sm text-muted-foreground">Total</div>
-              <div className="text-2xl font-bold">{roCurrencyCode} ${invoice.total.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-sm text-muted-foreground">Pagado</div>
-              <div className="text-2xl font-bold text-green-600">{roCurrencyCode} ${invoice.paid_amount.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-sm text-muted-foreground">Pendiente</div>
-              <div className="text-2xl font-bold text-orange-600">{roCurrencyCode} ${remainingBalance.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-sm text-muted-foreground">Estado pago</div>
-              <div className="text-2xl font-bold">{invoice.payment_status}</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <div className="text-sm text-muted-foreground font-mono uppercase text-xs">Total</div>
+            <div className="text-2xl font-bold">{roCurrencyCode} ${invoice.total.toFixed(2)}</div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <div className="text-sm text-muted-foreground font-mono uppercase text-xs">Pagado</div>
+            <div className="text-2xl font-bold text-green-600">{roCurrencyCode} ${invoice.paid_amount.toFixed(2)}</div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <div className="text-sm text-muted-foreground font-mono uppercase text-xs">Pendiente</div>
+            <div className="text-2xl font-bold text-orange-600">{roCurrencyCode} ${remainingBalance.toFixed(2)}</div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <div className="text-sm text-muted-foreground font-mono uppercase text-xs">Estado pago</div>
+            <div className="text-2xl font-bold">{invoice.payment_status}</div>
+          </div>
         </div>
         )
       })()}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Items de la Factura</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
-                    <th className="px-4 py-2 text-right text-sm font-medium">Cantidad</th>
-                    <th className="px-4 py-2 text-right text-sm font-medium">Precio</th>
-                    <th className="px-4 py-2 text-right text-sm font-medium">Total</th>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border border-border/60 bg-card/80 p-4 lg:col-span-2">
+          <h2 className="text-base font-semibold mb-3">Items de la Factura</h2>
+          <div className="rounded-md border">
+            <table className="w-full">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium">Cantidad</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium">Precio</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {invoice?.items?.map((item, index) => (
+                  <tr key={item.id || index}>
+                    <td className="px-4 py-3">
+                      <div>{item.description}</div>
+                      {(item.warranty_duration && item.warranty_period) && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}
+                          {item.warranty_end_date && ` (hasta ${new Date(item.warranty_end_date).toLocaleDateString('es-ES')})`}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">{item.quantity}</td>
+                    <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">${item.total.toFixed(2)}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {invoice?.items?.map((item, index) => (
-                    <tr key={item.id || index}>
-                      <td className="px-4 py-3">
-                        <div>{item.description}</div>
-                        {(item.warranty_duration && item.warranty_period) && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}
-                            {item.warranty_end_date && ` (hasta ${new Date(item.warranty_end_date).toLocaleDateString('es-ES')})`}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right">${item.total.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Detalles</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <h2 className="text-base font-semibold mb-3">Detalles</h2>
+            <div className="space-y-3">
               {invoice?.customer && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cliente:</span>
+                  <span className="text-muted-foreground font-mono text-xs">Cliente:</span>
                   <span className="font-medium">{invoice.customer.name}</span>
                 </div>
               )}
               {invoice?.due_date && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vencimiento:</span>
+                  <span className="text-muted-foreground font-mono text-xs">Vencimiento:</span>
                   <span>{new Date(invoice.due_date).toLocaleDateString('es-ES')}</span>
                 </div>
               )}
@@ -850,57 +836,57 @@ export function InvoiceDetailPage() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader><CardTitle>Totales</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <h2 className="text-base font-semibold mb-3">Totales</h2>
+            <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.subtotal?.toFixed(2) ?? '0.00'}</span>
+                <span className="text-muted-foreground font-mono text-xs">Subtotal</span>
+                <span>{invoice?.currency?.code || 'CUP'} ${invoice?.subtotal?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Impuestos</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.tax_amount?.toFixed(2) ?? '0.00'}</span>
+                <span className="text-muted-foreground font-mono text-xs">Impuestos</span>
+                <span>{invoice?.currency?.code || 'CUP'} ${invoice?.tax_amount?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Descuentos</span><span>-{invoice?.currency?.code || 'CUP'} ${invoice?.discount_amount?.toFixed(2) ?? '0.00'}</span>
+                <span className="text-muted-foreground font-mono text-xs">Descuentos</span>
+                <span>-{invoice?.currency?.code || 'CUP'} ${invoice?.discount_amount?.toFixed(2) ?? '0.00'}</span>
               </div>
               <div className="flex justify-between border-t pt-2 text-lg font-bold">
-                <span>Total</span><span>{invoice?.currency?.code || 'CUP'} ${invoice?.total.toFixed(2) ?? '0.00'}</span>
+                <span>Total</span>
+                <span>{invoice?.currency?.code || 'CUP'} ${invoice?.total.toFixed(2) ?? '0.00'}</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {invoice?.payments && invoice.payments.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle>Pagos ({invoice.payments.length})</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {invoice.payments.map((payment) => (
-                    <div key={payment.id} className="text-sm border-b pb-2 last:border-0">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{new Date(payment.created_at).toLocaleDateString()} - {payment.payment_method}</span>
-                        <span className="font-medium">${payment.amount.toFixed(2)}</span>
-                      </div>
-                      {payment.customer_name && <div className="text-muted-foreground mt-1">Cliente: {payment.customer_name}</div>}
-                      {payment.identity_card && <div className="text-muted-foreground">CI: {payment.identity_card}</div>}
-                      {payment.card_number && <div className="text-muted-foreground">Tarjeta: {payment.card_number}</div>}
-                      {payment.transfer_code && <div className="text-muted-foreground">Código transf.: {payment.transfer_code}</div>}
-                      {payment.reference && <div className="text-muted-foreground">Ref: {payment.reference}</div>}
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <h2 className="text-base font-semibold mb-3">Pagos ({invoice.payments.length})</h2>
+              <div className="space-y-3">
+                {invoice.payments.map((payment) => (
+                  <div key={payment.id} className="text-sm border-b pb-2 last:border-0">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{new Date(payment.created_at).toLocaleDateString()} - {payment.payment_method}</span>
+                      <span className="font-medium">${payment.amount.toFixed(2)}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    {payment.customer_name && <div className="text-muted-foreground mt-1">Cliente: {payment.customer_name}</div>}
+                    {payment.identity_card && <div className="text-muted-foreground">CI: {payment.identity_card}</div>}
+                    {payment.card_number && <div className="text-muted-foreground">Tarjeta: {payment.card_number}</div>}
+                    {payment.transfer_code && <div className="text-muted-foreground">Código transf.: {payment.transfer_code}</div>}
+                    {payment.reference && <div className="text-muted-foreground">Ref: {payment.reference}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {invoice?.notes && (
-            <Card>
-              <CardHeader><CardTitle>Notas</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{invoice.notes}</p>
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <h2 className="text-base font-semibold mb-3">Notas</h2>
+              <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+            </div>
           )}
         </div>
       </div>
@@ -981,9 +967,9 @@ export function InvoiceDetailPage() {
   // Helper render functions used by new/edit forms
   function renderDetailsForm() {
     return (
-      <Card>
-        <CardHeader><CardTitle>Detalles</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <h2 className="text-base font-semibold mb-3">Detalles</h2>
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label>Tienda *</Label>
             <Select value={watch('store_id')} onValueChange={(v) => setValue('store_id', v)}>
@@ -1027,22 +1013,22 @@ export function InvoiceDetailPage() {
             <Label>Notas</Label>
             <Textarea {...register('notes')} placeholder="Notas de la factura" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   function renderTotalsCard() {
     return (
-      <Card>
-        <CardHeader><CardTitle>Totales</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between"><span>Subtotal</span><span>{formCurrencyCode} ${totals.subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Impuestos</span><span>{formCurrencyCode} ${totals.tax.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Descuentos</span><span>-{formCurrencyCode} ${totals.discount.toFixed(2)}</span></div>
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <h2 className="text-base font-semibold mb-3">Totales</h2>
+        <div className="space-y-2">
+          <div className="flex justify-between"><span className="text-muted-foreground font-mono text-xs">Subtotal</span><span>{formCurrencyCode} ${totals.subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground font-mono text-xs">Impuestos</span><span>{formCurrencyCode} ${totals.tax.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground font-mono text-xs">Descuentos</span><span>-{formCurrencyCode} ${totals.discount.toFixed(2)}</span></div>
           <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>{formCurrencyCode} ${totals.total.toFixed(2)}</span></div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 }

@@ -41,10 +41,10 @@ Stable. All quality gates green.
 ## Validation Commands
 
 ```bash
-npm run lint -- --quiet
-npm run typecheck
-npm run test -- --run
-npm run build
+pnpm run lint -- --quiet
+pnpm run typecheck
+pnpm run test -- --run
+pnpm run build
 ```
 
 For detailed session history, see [docs/history/](./docs/history/).

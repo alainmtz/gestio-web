@@ -4,8 +4,6 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Loader2, ArrowLeft, FileCheck, X, Plus, Trash2, Search, Package, Save, Send, Check, Pencil } from 'lucide-react'
+import { Loader2, ArrowLeft, FileCheck, X, Plus, Trash2, Search, Package, Save, Send, Check, Pencil, FileText } from 'lucide-react'
 import { preInvoiceSchema, type PreInvoiceFormData } from '@/schemas'
 import {
   getPreInvoice,
@@ -67,8 +65,6 @@ export function PreInvoiceDetailPage() {
 
   const isNew = id === 'new'
   const [isEditing, setIsEditing] = useState(false)
-
-  // Product search state (for new form)
   const [productSearch, setProductSearch] = useState('')
   const [openProductPopover, setOpenProductPopover] = useState<number | null>(null)
   const popoverRef = useRef<HTMLButtonElement>(null)
@@ -76,44 +72,35 @@ export function PreInvoiceDetailPage() {
   const [rejectReason, setRejectReason] = useState('')
   const itemOrigCurrencyRef = useRef<Record<number, string>>({})
 
-  // ── Data queries ──────────────────────────────────────────────────────────
   const { data: storesData } = useStores()
   const { data: currenciesData } = useCurrencies()
-
   const { data: customersData } = useQuery({
     queryKey: ['customers', organizationId],
     queryFn: () => getCustomers(organizationId!, {}),
     enabled: !!organizationId,
   })
-
   const { data: productsData } = useQuery({
     queryKey: ['products', organizationId, productSearch],
     queryFn: () => getProducts(organizationId!, { search: productSearch || undefined, pageSize: 20 }),
     enabled: !!organizationId,
   })
-
   const { data: inventoryData } = useQuery({
     queryKey: ['inventory', organizationId, currentStore?.id],
     queryFn: async () => {
       if (!organizationId) return []
-      let query = supabase
-        .from('inventory')
-        .select('product_id, quantity')
-        .eq('organization_id', organizationId)
+      let query = supabase.from('inventory').select('product_id, quantity').eq('organization_id', organizationId)
       if (currentStore?.id) query = query.eq('store_id', currentStore.id)
       const { data } = await query
       return data || []
     },
     enabled: !!organizationId,
   })
-
   const { data: preInvoice, isLoading } = useQuery({
     queryKey: ['preInvoice', id],
     queryFn: () => getPreInvoice(id!),
     enabled: !isNew && !!id,
   })
 
-  // ── Form (only used for new) ───────────────────────────────────────────────
   const {
     register,
     handleSubmit,
@@ -142,7 +129,6 @@ export function PreInvoiceDetailPage() {
   const currencyCode = currenciesData?.find(c => c.id === watchedCurrencyId)?.code || 'CUP'
   const cupCurrencyId = currenciesData?.find(c => c.code === 'CUP')?.id || ''
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (data: PreInvoiceFormData) => createPreInvoice(organizationId!, userId!, data),
     onSuccess: () => {
@@ -183,21 +169,17 @@ export function PreInvoiceDetailPage() {
   const approveMutation = useApprovePreInvoice()
   const submitForApprovalMutation = useSubmitPreInvoiceForApproval()
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const getProductStock = (productId: string) =>
-    inventoryData?.find((inv) => inv.product_id === productId)?.quantity || 0
+  const getProductStock = (productId: string) => inventoryData?.find((inv) => inv.product_id === productId)?.quantity || 0
 
   const addProduct = async (product: Product, index: number) => {
     const stock = getProductStock(product.id)
     const preInvoiceCurrencyId = watch('currency_id')
     const productCurrencyId = product.price_currency_id || cupCurrencyId
     itemOrigCurrencyRef.current[index] = productCurrencyId
-
     let unitPrice = product.price
     if (preInvoiceCurrencyId && preInvoiceCurrencyId !== productCurrencyId) {
       unitPrice = await convertPrice(organizationId!, product.price, productCurrencyId, preInvoiceCurrencyId)
     }
-
     setValue(`items.${index}.product_id`, product.id)
     setValue(`items.${index}.description`, product.name)
     setValue(`items.${index}.sku`, product.sku)
@@ -213,7 +195,6 @@ export function PreInvoiceDetailPage() {
     const oldCurrencyId = getValues().currency_id
     if (!newCurrencyId || newCurrencyId === oldCurrencyId) return
     setValue('currency_id', newCurrencyId)
-
     for (let i = 0; i < fields.length; i++) {
       const item = items?.[i]
       if (!item?.product_id || !item.unit_price) continue
@@ -227,18 +208,14 @@ export function PreInvoiceDetailPage() {
   const getItemSubtotal = (index: number) => {
     const item = items?.[index]
     if (!item) return 0
-    const subtotal = item.quantity * item.unit_price
-    return subtotal - subtotal * (item.discount_percentage || 0) / 100
+    return item.quantity * item.unit_price - item.quantity * item.unit_price * (item.discount_percentage || 0) / 100
   }
-
   const getItemTax = (index: number) => {
     const item = items?.[index]
     if (!item) return 0
     return item.quantity * item.unit_price * (item.tax_rate || 0) / 100
   }
-
   const getItemTotal = (index: number) => getItemSubtotal(index) + getItemTax(index)
-
   const totalSubtotal = items?.reduce((s, i) => s + i.quantity * i.unit_price, 0) || 0
   const totalDiscount = items?.reduce((s, i) => s + i.quantity * i.unit_price * (i.discount_percentage || 0) / 100, 0) || 0
   const totalTax = items?.reduce((s, i) => s + i.quantity * i.unit_price * (i.tax_rate || 0) / 100, 0) || 0
@@ -256,17 +233,13 @@ export function PreInvoiceDetailPage() {
     }
   }
 
-  const handleReject = async () => {
-    setRejectDialogOpen(true)
-  }
-
+  const handleReject = () => setRejectDialogOpen(true)
   const confirmReject = async () => {
     await rejectMutation.mutateAsync(rejectReason || 'Rechazada')
     setRejectDialogOpen(false)
     setRejectReason('')
   }
 
-  // Populate form when entering edit mode for existing pre-invoice
   useEffect(() => {
     if (isEditing && preInvoice) {
       reset({
@@ -285,7 +258,7 @@ export function PreInvoiceDetailPage() {
           available_stock: 0,
           warranty_duration: item.warranty_duration,
           warranty_period: item.warranty_period,
-        })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined }],
+        })) || [{ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0 }],
       })
     }
   }, [isEditing, preInvoice, reset, defaultCurrencyId])
@@ -307,43 +280,35 @@ export function PreInvoiceDetailPage() {
 
   const handleSubmitForApproval = async () => {
     await submitForApprovalMutation.mutateAsync(id!, {
-      onSuccess: () => {
-        toast({ title: 'Enviada a aprobación', description: 'La prefactura está pendiente de aprobación' })
-      },
-      onError: (error: Error) => {
-        toast({ title: 'Error', description: error.message, variant: 'destructive' })
-      },
+      onSuccess: () => toast({ title: 'Enviada a aprobación', description: 'La prefactura está pendiente de aprobación' }),
+      onError: (error: Error) => toast({ title: 'Error', description: error.message, variant: 'destructive' }),
     })
   }
 
   const handleApprove = async () => {
     await approveMutation.mutateAsync(id!, {
-      onSuccess: () => {
-        toast({ title: 'Prefactura aprobada', description: 'La prefactura ha sido aprobada' })
-      },
-      onError: (error: Error) => {
-        toast({ title: 'Error', description: error.message, variant: 'destructive' })
-      },
+      onSuccess: () => toast({ title: 'Prefactura aprobada', description: 'La prefactura ha sido aprobada' }),
+      onError: (error: Error) => toast({ title: 'Error', description: error.message, variant: 'destructive' }),
     })
   }
 
   // ── NEW pre-invoice form ──────────────────────────────────────────────────
   if (isNew) {
     return (
-      <form
-        onSubmit={handleSubmit((data) => createMutation.mutate(data))}
-        className="container py-8 space-y-6"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="container py-8 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div className="flex items-center gap-3">
             <Link to="/billing/preinvoices">
               <Button variant="ghost" size="icon" type="button">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Nueva Prefactura</h1>
-              <p className="text-muted-foreground">Crea una nueva prefactura</p>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+                <h1 className="text-lg font-semibold tracking-tight">Nueva Prefactura</h1>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground monospace">Crea una nueva prefactura</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -351,113 +316,64 @@ export function PreInvoiceDetailPage() {
               <Button type="button" variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" disabled={isSubmitting || createMutation.isPending || !hasPermission(PERMISSIONS.PREINVOICE_CREATE)}>
-              {(isSubmitting || createMutation.isPending) && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {(isSubmitting || createMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
               Crear Prefactura
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-4">
-          {/* Items */}
-          <div className="lg:col-span-3 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Productos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {fields.map((field, index) => {
-                    const stock =
-                      items?.[index]?.available_stock ||
-                      getProductStock(items?.[index]?.product_id || '')
-                    const hasProduct = !!items?.[index]?.product_id
-
-                    return (
-                      <div key={field.id} className="border p-2 rounded space-y-2">
-                        <div className="flex gap-2 items-start">
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="lg:col-span-3 space-y-4">
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <Package className="h-3.5 w-3.5 inline mr-1.5" />Productos
+              </p>
+              <div className="space-y-2">
+                {fields.map((field, index) => {
+                  const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
+                  const hasProduct = !!items?.[index]?.product_id
+                  return (
+                    <div key={field.id} className="border p-2 rounded space-y-2">
+                      <div className="flex gap-2 items-start">
                         <div className="flex-1">
-                          <Popover
-                            open={openProductPopover === index}
-                            onOpenChange={(open) => {
-                              setOpenProductPopover(open ? index : null)
-                              if (!open) setProductSearch('')
-                            }}
-                          >
+                          <Popover open={openProductPopover === index} onOpenChange={(open) => { setOpenProductPopover(open ? index : null); if (!open) setProductSearch('') }}>
                             <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className={cn(
-                                  'w-full justify-between text-left',
-                                  !hasProduct && 'text-muted-foreground'
-                                )}
-                                ref={popoverRef}
-                              >
+                              <Button type="button" variant="outline" className={cn('w-full justify-between text-left', !hasProduct && 'text-muted-foreground')} ref={popoverRef}>
                                 {hasProduct ? (
                                   <span className="flex items-center gap-2">
                                     <Package className="h-4 w-4" />
                                     <span>{items?.[index]?.description}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      ({items?.[index]?.sku})
-                                    </span>
+                                    <span className="text-xs text-muted-foreground">({items?.[index]?.sku})</span>
                                   </span>
-                                ) : (
-                                  'Buscar producto...'
-                                )}
+                                ) : 'Buscar producto...'}
                                 <Search className="h-4 w-4 ml-2" />
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent
-                              className="p-0"
-                              align="start"
-                              side="bottom"
-                              sideOffset={4}
-                              style={{ width: popoverRef.current?.offsetWidth }}
-                            >
+                            <PopoverContent className="p-0" align="start" side="bottom" sideOffset={4} style={{ width: popoverRef.current?.offsetWidth }}>
                               <div className="p-2 border-b">
                                 <div className="relative">
                                   <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                  <Input
-                                    placeholder="Buscar productos..."
-                                    className="pl-8"
-                                    value={productSearch}
-                                    onChange={(e) => setProductSearch(e.target.value)}
-                                    autoFocus
-                                  />
+                                  <Input placeholder="Buscar productos..." className="pl-8" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} autoFocus />
                                 </div>
                               </div>
                               <div className="max-h-64 overflow-y-auto">
                                 {productsData?.products?.map((product) => {
                                   const prodStock = getProductStock(product.id)
                                   return (
-                                    <div
-                                      key={product.id}
-                                      className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer"
-                                      onClick={() => addProduct(product, index)}
-                                    >
+                                    <div key={product.id} className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer" onClick={() => addProduct(product, index)}>
                                       <div>
                                         <p className="font-medium text-sm">{product.name}</p>
                                         <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
                                       </div>
                                       <div className="text-right">
                                         <p className="font-medium text-sm">${product.price}</p>
-                                        <p
-                                          className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}
-                                        >
-                                          Stock: {prodStock}
-                                        </p>
+                                        <p className={`text-xs ${prodStock > 0 ? 'text-green-600' : 'text-red-600'}`}>Stock: {prodStock}</p>
                                       </div>
                                     </div>
                                   )
                                 })}
-                                {productsData?.products?.length === 0 && (
-                                  <div className="text-center py-4 text-muted-foreground text-sm">
-                                    No se encontraron productos
-                                  </div>
-                                )}
+                                {productsData?.products?.length === 0 && <div className="text-center py-4 text-muted-foreground text-sm">No se encontraron productos</div>}
                               </div>
                             </PopoverContent>
                           </Popover>
@@ -468,65 +384,29 @@ export function PreInvoiceDetailPage() {
                         </div>
                         <div className="w-20">
                           <Label className="text-xs text-muted-foreground">Cant *</Label>
-                          <Input
-                            type="number"
-                            {...register(`items.${index}.quantity` as const, { valueAsNumber: true })}
-                            min={1}
-                            max={stock > 0 ? stock : undefined}
-                            className="text-center"
-                          />
+                          <Input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} min={1} max={stock > 0 ? stock : undefined} className="text-center" />
                         </div>
                         <div className="w-24">
                           <Label className="text-xs text-muted-foreground">Precio</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })}
-                            className="text-right"
-                          />
+                          <Input type="number" step="0.01" {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })} className="text-right" />
                         </div>
                         <div className="w-16">
                           <Label className="text-xs text-muted-foreground">%Tax</Label>
-                          <Input
-                            type="number"
-                            {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })}
-                            className="text-center"
-                          />
+                          <Input type="number" {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })} className="text-center" />
                         </div>
                         <div className="w-20">
                           <Label className="text-xs text-muted-foreground">Total</Label>
-                          <Input
-                            value={getItemTotal(index).toFixed(2)}
-                            disabled
-                            className="text-right font-medium"
-                          />
+                          <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          disabled={fields.length === 1}
-                        >
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                       <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
                         <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
-                          className="w-16 text-center"
-                          placeholder="0"
-                        />
-                        <Select
-                          value={items?.[index]?.warranty_period || ''}
-                          onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue placeholder="-" />
-                          </SelectTrigger>
+                        <Input type="number" min={0} {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })} className="w-16 text-center" placeholder="0" />
+                        <Select value={items?.[index]?.warranty_period || ''} onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}>
+                          <SelectTrigger className="w-24"><SelectValue placeholder="-" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="days">Días</SelectItem>
                             <SelectItem value="months">Meses</SelectItem>
@@ -534,121 +414,61 @@ export function PreInvoiceDetailPage() {
                         </Select>
                       </div>
                     </div>
-                    )
-                  })}
+                  )
+                })}
+              </div>
+              {errors.items && <p className="text-sm text-destructive mt-2">{typeof errors.items.message === 'string' ? errors.items.message : 'Error en los items'}</p>}
+              <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar Item
+                </Button>
+                <div className="text-right">
+                  <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
+                  <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
+                  <p className="text-sm">Impuesto: +{currencyCode} ${totalTax.toFixed(2)}</p>
+                  <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                 </div>
-
-                {errors.items && (
-                  <p className="text-sm text-destructive mt-2">
-                    {typeof errors.items.message === 'string' ? errors.items.message : 'Error en los items'}
-                  </p>
-                )}
-
-                <div className="flex justify-between items-center mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      append({
-                        product_id: '',
-                        description: '',
-                        sku: '',
-                        quantity: 1,
-                        unit_price: 0,
-                        tax_rate: 0,
-                        discount_percentage: 0,
-                        available_stock: 0,
-                        warranty_duration: undefined,
-                        warranty_period: undefined,
-                      })
-                    }
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Agregar Item
-                  </Button>
-                  <div className="text-right">
-                    <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
-                    <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
-                    <p className="text-sm">Impuesto: +{currencyCode} ${totalTax.toFixed(2)}</p>
-                    <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalles</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <FileText className="h-3.5 w-3.5 inline mr-1.5" />Detalles
+              </p>
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Tienda *</Label>
-                  <Select
-                    value={watch('store_id')}
-                    onValueChange={(v) => setValue('store_id', v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar tienda" />
-                    </SelectTrigger>
+                  <Select value={watch('store_id')} onValueChange={(v) => setValue('store_id', v)}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar tienda" /></SelectTrigger>
                     <SelectContent>
-                      {storesData?.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name}
-                        </SelectItem>
-                      ))}
+                      {storesData?.map((store) => <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {errors.store_id && (
-                    <p className="text-sm text-destructive">{errors.store_id.message}</p>
-                  )}
+                  {errors.store_id && <p className="text-sm text-destructive">{errors.store_id.message}</p>}
                 </div>
-
                 <div className="space-y-2">
                   <Label>Moneda *</Label>
-                  <Select
-                    value={watch('currency_id')}
-                    onValueChange={handleCurrencyChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar moneda" />
-                    </SelectTrigger>
+                  <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar moneda" /></SelectTrigger>
                     <SelectContent>
-                      {currenciesData?.map((currency) => (
-                        <SelectItem key={currency.id} value={currency.id}>
-                          {currency.code} - {currency.name}
-                        </SelectItem>
-                      ))}
+                      {currenciesData?.map((currency) => <SelectItem key={currency.id} value={currency.id}>{currency.code} - {currency.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {errors.currency_id && (
-                    <p className="text-sm text-destructive">{errors.currency_id.message}</p>
-                  )}
+                  {errors.currency_id && <p className="text-sm text-destructive">{errors.currency_id.message}</p>}
                 </div>
-
                 <div className="space-y-2">
                   <Label>Cliente</Label>
-                  <SearchableSelect
-                    value={watch('customer_id') || ''}
-                    onValueChange={(v) => setValue('customer_id', v || '')}
-                    options={[
-                      { id: '', label: 'Sin cliente' },
-                      ...(customersData?.customers?.map((c) => ({ id: c.id, label: c.name })) || []),
-                    ]}
-                    placeholder="Seleccionar cliente"
-                    searchPlaceholder="Buscar cliente..."
-                    emptyMessage="No se encontraron clientes"
-                  />
+                  <SearchableSelect value={watch('customer_id') || ''} onValueChange={(v) => setValue('customer_id', v || '')} options={[{ id: '', label: 'Sin cliente' }, ...(customersData?.customers?.map((c) => ({ id: c.id, label: c.name })) || [])]} placeholder="Seleccionar cliente" searchPlaceholder="Buscar cliente..." emptyMessage="No se encontraron clientes" />
                 </div>
-
                 <div className="space-y-2">
-                   <Label>Notas</Label>
+                  <Label>Notas</Label>
                   <Textarea {...register('notes')} placeholder="Notas adicionales..." />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </form>
@@ -678,15 +498,18 @@ export function PreInvoiceDetailPage() {
   if (isEditing) {
     return (
       <>
-        <form onSubmit={handleSaveEdit} className="container py-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <form onSubmit={handleSaveEdit} className="container py-8 space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" type="button" onClick={() => setIsEditing(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Editando Prefactura {preInvoice.number}</h1>
-                <p className="text-muted-foreground">Modo edición</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+                  <h1 className="text-lg font-semibold tracking-tight">Editando Prefactura {preInvoice.number}</h1>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground monospace">Modo edición</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -699,35 +522,23 @@ export function PreInvoiceDetailPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-4">
-            <div className="lg:col-span-3 space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Productos</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {fields.map((field, index) => {
-                      const stock =
-                        items?.[index]?.available_stock ||
-                        getProductStock(items?.[index]?.product_id || '')
-                      const hasProduct = !!items?.[index]?.product_id
-                      return (
-                        <div key={field.id} className="border p-2 rounded space-y-2">
-                          <div className="flex gap-2 items-start">
+          <div className="grid gap-4 lg:grid-cols-4">
+            <div className="lg:col-span-3 space-y-4">
+              <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+                <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                  <Package className="h-3.5 w-3.5 inline mr-1.5" />Productos
+                </p>
+                <div className="space-y-2">
+                  {fields.map((field, index) => {
+                    const stock = items?.[index]?.available_stock || getProductStock(items?.[index]?.product_id || '')
+                    const hasProduct = !!items?.[index]?.product_id
+                    return (
+                      <div key={field.id} className="border p-2 rounded space-y-2">
+                        <div className="flex gap-2 items-start">
                           <div className="flex-1">
-                            <Popover
-                              open={openProductPopover === index}
-                              onOpenChange={(open) => {
-                                setOpenProductPopover(open ? index : null)
-                                if (!open) setProductSearch('')
-                              }}
-                            >
+                            <Popover open={openProductPopover === index} onOpenChange={(open) => { setOpenProductPopover(open ? index : null); if (!open) setProductSearch('') }}>
                               <PopoverTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className={cn('w-full justify-between text-left', !hasProduct && 'text-muted-foreground')}
-                                  ref={popoverRef}
-                                >
+                                <Button type="button" variant="outline" className={cn('w-full justify-between text-left', !hasProduct && 'text-muted-foreground')} ref={popoverRef}>
                                   {hasProduct ? (
                                     <span className="flex items-center gap-2">
                                       <Package className="h-4 w-4" />
@@ -761,68 +572,35 @@ export function PreInvoiceDetailPage() {
                                       </div>
                                     )
                                   })}
-                                  {productsData?.products?.length === 0 && (
-                                    <div className="text-center py-4 text-muted-foreground text-sm">No se encontraron productos</div>
-                                  )}
+                                  {productsData?.products?.length === 0 && <div className="text-center py-4 text-muted-foreground text-sm">No se encontraron productos</div>}
                                 </div>
                               </PopoverContent>
                             </Popover>
                           </div>
-                          <div className="w-20">
-                            <Label className="text-xs text-muted-foreground">Stock</Label>
-                            <Input value={stock} disabled className="text-center" />
-                          </div>
-                          <div className="w-20">
-                            <Label className="text-xs text-muted-foreground">Cant *</Label>
-                            <Input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} min={1} max={stock > 0 ? stock : undefined} className="text-center" />
-                          </div>
-                          <div className="w-24">
-                            <Label className="text-xs text-muted-foreground">Precio</Label>
-                            <Input type="number" step="0.01" {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })} className="text-right" />
-                          </div>
-                          <div className="w-16">
-                            <Label className="text-xs text-muted-foreground">%Tax</Label>
-                            <Input type="number" {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })} className="text-center" />
-                          </div>
-                          <div className="w-20">
-                            <Label className="text-xs text-muted-foreground">Total</Label>
-                            <Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" />
-                          </div>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <div className="w-20"><Label className="text-xs text-muted-foreground">Stock</Label><Input value={stock} disabled className="text-center" /></div>
+                          <div className="w-20"><Label className="text-xs text-muted-foreground">Cant *</Label><Input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} min={1} max={stock > 0 ? stock : undefined} className="text-center" /></div>
+                          <div className="w-24"><Label className="text-xs text-muted-foreground">Precio</Label><Input type="number" step="0.01" {...register(`items.${index}.unit_price` as const, { valueAsNumber: true })} className="text-right" /></div>
+                          <div className="w-16"><Label className="text-xs text-muted-foreground">%Tax</Label><Input type="number" {...register(`items.${index}.tax_rate` as const, { valueAsNumber: true })} className="text-center" /></div>
+                          <div className="w-20"><Label className="text-xs text-muted-foreground">Total</Label><Input value={getItemTotal(index).toFixed(2)} disabled className="text-right font-medium" /></div>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length === 1}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
                         <div className="flex gap-2 items-center w-full mt-1 pt-1 border-t">
                           <Label className="text-xs text-muted-foreground whitespace-nowrap">Garantía</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })}
-                            className="w-16 text-center"
-                            placeholder="0"
-                          />
-                          <Select
-                            value={items?.[index]?.warranty_period || ''}
-                            onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue placeholder="-" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="days">Días</SelectItem>
-                              <SelectItem value="months">Meses</SelectItem>
-                            </SelectContent>
+                          <Input type="number" min={0} {...register(`items.${index}.warranty_duration` as const, { valueAsNumber: true })} className="w-16 text-center" placeholder="0" />
+                          <Select value={items?.[index]?.warranty_period || ''} onValueChange={(v) => setValue(`items.${index}.warranty_period` as const, v ? v as 'days' | 'months' : undefined)}>
+                            <SelectTrigger className="w-24"><SelectValue placeholder="-" /></SelectTrigger>
+                            <SelectContent><SelectItem value="days">Días</SelectItem><SelectItem value="months">Meses</SelectItem></SelectContent>
                           </Select>
                         </div>
                       </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex justify-between items-center mt-4">
-                    <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Agregar Item
-                    </Button>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => append({ product_id: '', description: '', sku: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_percentage: 0, available_stock: 0, warranty_duration: undefined, warranty_period: undefined })}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agregar Item
+                  </Button>
                   <div className="text-right">
                     <p className="text-sm">Subtotal: {currencyCode} ${totalSubtotal.toFixed(2)}</p>
                     <p className="text-sm">Descuento: -{currencyCode} ${totalDiscount.toFixed(2)}</p>
@@ -830,53 +608,39 @@ export function PreInvoiceDetailPage() {
                     <p className="font-bold text-lg">Total: {currencyCode} ${grandTotal.toFixed(2)}</p>
                   </div>
                 </div>
-                </CardContent>
-              </Card>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Detalles</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+                <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                  <FileText className="h-3.5 w-3.5 inline mr-1.5" />Detalles
+                </p>
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Tienda *</Label>
                     <Select value={watch('store_id')} onValueChange={(v) => setValue('store_id', v)}>
                       <SelectTrigger><SelectValue placeholder="Seleccionar tienda" /></SelectTrigger>
-                      <SelectContent>
-                        {storesData?.map((store) => (
-                          <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectContent>{storesData?.map((store) => <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Moneda *</Label>
                     <Select value={watch('currency_id')} onValueChange={handleCurrencyChange}>
                       <SelectTrigger><SelectValue placeholder="Seleccionar moneda" /></SelectTrigger>
-                      <SelectContent>
-                        {currenciesData?.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.id}>{currency.code} - {currency.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectContent>{currenciesData?.map((currency) => <SelectItem key={currency.id} value={currency.id}>{currency.code} - {currency.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Cliente</Label>
-                    <SearchableSelect
-                      value={watch('customer_id') || ''}
-                      onValueChange={(v) => setValue('customer_id', v || '')}
-                      options={[{ id: '', label: 'Sin cliente' }, ...(customersData?.customers?.map((c) => ({ id: c.id, label: c.name })) || [])]}
-                      placeholder="Seleccionar cliente"
-                      searchPlaceholder="Buscar cliente..."
-                      emptyMessage="No se encontraron clientes"
-                    />
+                    <SearchableSelect value={watch('customer_id') || ''} onValueChange={(v) => setValue('customer_id', v || '')} options={[{ id: '', label: 'Sin cliente' }, ...(customersData?.customers?.map((c) => ({ id: c.id, label: c.name })) || [])]} placeholder="Seleccionar cliente" searchPlaceholder="Buscar cliente..." emptyMessage="No se encontraron clientes" />
                   </div>
                   <div className="space-y-2">
                     <Label>Notas</Label>
                     <Textarea {...register('notes')} placeholder="Notas adicionales..." />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
         </form>
@@ -887,30 +651,26 @@ export function PreInvoiceDetailPage() {
   // ── READ-ONLY VIEW ─────────────────────────────────────────────────────────
   const readOnlyCurrencyCode = preInvoice?.currency?.code || 'CUP'
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="container py-8 space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex items-center gap-3">
           <Link to="/billing/preinvoices">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Prefactura {preInvoice.number}
-            </h1>
-            <div className="text-muted-foreground">
-              Estado: <Badge variant={status.variant}>{status.label}</Badge>
-              {preInvoice.rejection_reason && (
-                <span className="ml-2 text-sm text-destructive">
-                  ({preInvoice.rejection_reason})
-                </span>
-              )}
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+              <h1 className="text-lg font-semibold tracking-tight">Prefactura {preInvoice.number}</h1>
+            </div>
+            <div className="mt-0.5 text-xs text-muted-foreground monospace">
+              Estado: <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: 'hsl(var(--muted))' }}>{status.label}</span>
+              {preInvoice.rejection_reason && <span className="ml-2 text-destructive">({preInvoice.rejection_reason})</span>}
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          {/* draft → edit or submit */}
+        <div className="flex flex-wrap gap-2">
           {preInvoice.status === 'draft' && hasPermission(PERMISSIONS.PREINVOICE_EDIT) && (
             <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -923,7 +683,6 @@ export function PreInvoiceDetailPage() {
               Enviar a aprobación
             </Button>
           )}
-          {/* pending_approval → approve or reject */}
           {preInvoice.status === 'pending_approval' && hasPermission(PERMISSIONS.PREINVOICE_APPROVE) && (
             <>
               <Button type="button" onClick={handleApprove} disabled={approveMutation.isPending}>
@@ -936,7 +695,6 @@ export function PreInvoiceDetailPage() {
               </Button>
             </>
           )}
-          {/* approved → convert to invoice */}
           {preInvoice.status === 'approved' && hasPermission(PERMISSIONS.INVOICE_CREATE) && (
             <Button type="button" onClick={handleConvertToInvoice} disabled={convertToInvoiceMutation.isPending}>
               {convertToInvoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck className="mr-2 h-4 w-4" />}
@@ -949,99 +707,70 @@ export function PreInvoiceDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Cantidad</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Precio</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Total</th>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+              <FileText className="h-3.5 w-3.5 inline mr-1.5" />Items
+            </p>
+            <div className="rounded-md border">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Cantidad</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Precio</th>
+                    <th className="px-4 py-2 text-right text-sm font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {preInvoice.items?.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td className="px-4 py-3">
+                        <div>{item.description}</div>
+                        {(item.warranty_duration && item.warranty_period) && <div className="text-xs text-muted-foreground mt-1">Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-right">{item.quantity}</td>
+                      <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right">${item.total.toFixed(2)}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {preInvoice.items?.map((item, index) => (
-                      <tr key={item.id || index}>
-                        <td className="px-4 py-3">
-                          <div>{item.description}</div>
-                          {(item.warranty_duration && item.warranty_period) && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Garantía: {item.warranty_duration} {item.warranty_period === 'days' ? 'días' : 'meses'}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">{item.quantity}</td>
-                        <td className="px-4 py-3 text-right">${item.unit_price.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">${item.total.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {preInvoice.customer && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cliente:</span>
-                  <span className="font-medium">{preInvoice.customer.name}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal:</span>
-                <span>{readOnlyCurrencyCode} ${preInvoice.subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Impuesto:</span>
-                <span>{readOnlyCurrencyCode} ${preInvoice.tax_amount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Descuento:</span>
-                <span>-{readOnlyCurrencyCode} ${preInvoice.discount_amount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-3 text-lg font-bold">
-                <span>Total:</span>
-                <span>{readOnlyCurrencyCode} ${preInvoice.total.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+            <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+              <FileText className="h-3.5 w-3.5 inline mr-1.5" />Resumen
+            </p>
+            <div className="space-y-3">
+              {preInvoice.customer && <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="font-medium">{preInvoice.customer.name}</span></div>}
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal:</span><span>{readOnlyCurrencyCode} ${preInvoice.subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Impuesto:</span><span>{readOnlyCurrencyCode} ${preInvoice.tax_amount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Descuento:</span><span>-{readOnlyCurrencyCode} ${preInvoice.discount_amount.toFixed(2)}</span></div>
+              <div className="flex justify-between border-t pt-3 text-lg font-bold"><span>Total:</span><span>{readOnlyCurrencyCode} ${preInvoice.total.toFixed(2)}</span></div>
+            </div>
+          </div>
 
           {preInvoice.offer_id && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Origen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Link to={`/billing/offers/${preInvoice.offer_id}`} className="text-primary hover:underline">
-                  Ver oferta origen
-                </Link>
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <FileText className="h-3.5 w-3.5 inline mr-1.5" />Origen
+              </p>
+              <Link to={`/billing/offers/${preInvoice.offer_id}`} className="text-primary hover:underline">Ver oferta origen</Link>
+            </div>
           )}
 
           {preInvoice.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{preInvoice.notes}</p>
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+              <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+                <FileText className="h-3.5 w-3.5 inline mr-1.5" />Notas
+              </p>
+              <p className="text-sm text-muted-foreground">{preInvoice.notes}</p>
+            </div>
           )}
         </div>
       </div>
@@ -1054,12 +783,7 @@ export function PreInvoiceDetailPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Motivo de rechazo</Label>
-              <Textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Escribe el motivo del rechazo..."
-                rows={3}
-              />
+              <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Escribe el motivo del rechazo..." rows={3} />
             </div>
           </div>
           <DialogFooter>

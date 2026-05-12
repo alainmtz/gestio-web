@@ -15,7 +15,6 @@ import { showErrorToast } from '@/lib/errorToast'
 import { Plus, Search, Upload, Package } from 'lucide-react'
 import { ProductForm } from '@/components/products/ProductForm'
 import { ProductCsvImport } from '@/components/products/ProductCsvImport'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +27,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/lib/toast'
 import type { CreateProductInput } from '@/api/products'
-import { Skeleton } from '@/components/ui/skeleton'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
 export function ProductsPage() {
@@ -91,11 +89,14 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
-          <p className="text-muted-foreground">Gestiona tu inventario de productos</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_hsl(142_71%_45%/0.6)]" />
+            <h1 className="text-lg font-semibold tracking-tight">Productos</h1>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground monospace">Gestiona tu inventario de productos</p>
         </div>
         {hasPermission(PERMISSIONS.PRODUCT_CREATE) && (
           <div className="flex gap-2">
@@ -137,51 +138,47 @@ export function ProductsPage() {
         </Select>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Lista de Productos ({total})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+        <p className="text-xs font-medium text-muted-foreground monospace tracking-wider uppercase mb-3">
+          <Package className="h-3.5 w-3.5 inline mr-1.5" />
+          Lista de Productos ({total})
+        </p>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
             <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-28 w-full" />
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onEdit={(p) => handleOpenForm(p)}
+                  onDelete={(id) => setDeleteId(id)}
+                />
               ))}
             </div>
-          ) : (
-            <>
-              <div className="space-y-3">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onEdit={(p) => handleOpenForm(p)}
-                    onDelete={(id) => setDeleteId(id)}
-                  />
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Página {page} de {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
-                      Anterior
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                      Siguiente
-                    </Button>
-                  </div>
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Página {page} de {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                    Anterior
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                    Siguiente
+                  </Button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <ProductForm
         open={formOpen}
