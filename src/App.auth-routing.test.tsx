@@ -8,6 +8,8 @@ const mockGetSession = vi.hoisted(() => vi.fn())
 
 const mockAuthState: Record<string, unknown> = vi.hoisted(() => ({
   isAuthenticated: false,
+  permissionLoaded: false,
+  permissionError: false,
   logout: vi.fn(() => { mockAuthState.isAuthenticated = false }),
 }))
 
@@ -66,6 +68,7 @@ describe('App auth routing', () => {
 
   it('renderiza router principal cuando hay sesion', () => {
     mockAuthState.isAuthenticated = true
+    mockAuthState.permissionLoaded = true
     mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'test' } } }, error: null })
 
     renderApp('/dashboard')

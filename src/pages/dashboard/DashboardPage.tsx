@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { ExchangeRatesCard } from '@/components/dashboard/ExchangeRatesCard'
+import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
 interface DashboardMetrics {
   salesThisMonth: number
@@ -239,9 +240,13 @@ function formatCurrency(value: number): string {
 }
 
 export function DashboardPage() {
+  const { hasPermission } = usePermissions()
   const { currentOrganization, currentStore } = useAuthStore()
   const organizationId = currentOrganization?.id
 
+  if (!hasPermission(PERMISSIONS.DASHBOARD_VIEW)) {
+    return <Navigate to="/mock-dashboard" replace />
+  }
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ['dashboardMetrics', organizationId],
     queryFn: () => fetchDashboardMetrics(organizationId!),

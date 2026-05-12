@@ -8,13 +8,20 @@ import { AcceptInvitationPage } from '@/pages/auth/AcceptInvitationPage'
 import { ToastProvider } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { Analytics } from '@vercel/analytics/react'
+import { fetchRolePermissions } from '@/hooks/usePermissions'
+import { PermissionGuard } from '@/components/guards/PermissionGuard'
 
 // Initialize theme before first render to avoid flash
 initTheme()
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
+  const currentOrganization = useAuthStore((state) => state.currentOrganization)
   const logout = useAuthStore((state) => state.logout)
+  const setPermissions = useAuthStore((state) => state.setPermissions)
+  const setPermissionLoaded = useAuthStore((state) => state.setPermissionLoaded)
+  const setPermissionError = useAuthStore((state) => state.setPermissionError)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -35,6 +42,22 @@ function App() {
     return () => subscription.unsubscribe()
   }, [navigate, logout])
 
+  // Fetch permissions once user + organization are available
+  useEffect(() => {
+    if (!user?.id || !currentOrganization?.id) return
+
+    fetchRolePermissions(user.id, currentOrganization.id)
+      .then((perms) => {
+        setPermissions(perms)
+        setPermissionLoaded(true)
+        setPermissionError(false)
+      })
+      .catch((err) => {
+        console.error('[App] Failed to load permissions:', err)
+        setPermissionError(true)
+      })
+  }, [user?.id, currentOrganization?.id, setPermissions, setPermissionLoaded, setPermissionError])
+
   return (
     <ToastProvider>
       <Analytics />
@@ -43,7 +66,7 @@ function App() {
         <Route path="/accept-invitation/:token" element={<AcceptInvitationPage />} />
         <Route
           path="/*"
-          element={isAuthenticated ? <AppRouter /> : <Navigate to="/auth/login" replace />}
+          element={isAuthenticated ? <PermissionGuard><AppRouter /></PermissionGuard> : <Navigate to="/auth/login" replace />}
         />
       </Routes>
     </ToastProvider>

@@ -26,7 +26,7 @@ export function PermissionRoute({
   }
 
   if (userPermissions.length === 0) {
-    return <>{children}</>
+    return <Navigate to="/unauthorized" state={{ from: location }} replace />
   }
 
   if (permission) {

@@ -47,6 +47,7 @@ const MembersPage = lazy(() => import('@/pages/settings/MembersPage').then(m => 
 const PermissionsPage = lazy(() => import('@/pages/settings/PermissionsPage').then(m => ({ default: m.PermissionsPage })))
 const ExchangeRatesPage = lazy(() => import('@/pages/settings/ExchangeRatesPage').then(m => ({ default: m.ExchangeRatesPage })))
 const UnauthorizedPage = lazy(() => import('@/pages/auth/UnauthorizedPage').then(m => ({ default: m.UnauthorizedPage })))
+const MockDashboardPage = lazy(() => import('@/pages/mock/MockDashboardPage').then(m => ({ default: m.MockDashboardPage })))
 
 function AppLayout() {
   return <DashboardLayout />
@@ -140,12 +141,13 @@ export function AppRouter() {
         <Route path="/pos" element={<PermissionRoute permission={PERMISSIONS.POS_ACCESS}><SuspensePage><POSPage /></SuspensePage></PermissionRoute>} />
 
         <Route path="/unauthorized" element={<SuspensePage><UnauthorizedPage /></SuspensePage>} />
+        <Route path="/mock-dashboard" element={<SuspensePage><MockDashboardPage /></SuspensePage>} />
 
         <Route path="/settings" element={<PermissionRoute permission={PERMISSIONS.SETTINGS_VIEW}><SettingsLayout /></PermissionRoute>}>
           <Route index element={<Navigate to="/settings/profile" replace />} />
           <Route path="profile" element={<SuspensePage><ProfilePage /></SuspensePage>} />
           <Route path="organization" element={<PermissionRoute permission={PERMISSIONS.ORG_VIEW}><SuspensePage><OrganizationPage /></SuspensePage></PermissionRoute>} />
-          <Route path="members" element={<PermissionRoute permission={PERMISSIONS.ORG_VIEW}><SuspensePage><MembersPage /></SuspensePage></PermissionRoute>} />
+          <Route path="members" element={<PermissionRoute permission={PERMISSIONS.MEMBER_INVITE}><SuspensePage><MembersPage /></SuspensePage></PermissionRoute>} />
           <Route path="permissions" element={<PermissionRoute permission={PERMISSIONS.ROLE_MANAGE}><SuspensePage><PermissionsPage /></SuspensePage></PermissionRoute>} />
           <Route path="exchange" element={<PermissionRoute permission={PERMISSIONS.SETTINGS_EXCHANGE}><SuspensePage><ExchangeRatesPage /></SuspensePage></PermissionRoute>} />
         </Route>

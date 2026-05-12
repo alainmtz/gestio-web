@@ -11,6 +11,7 @@ vi.mock('@/lib/supabase', () => ({
         data: { user: { id: 'user-1', email: 'test@test.com' }, session: { access_token: 'token', expires_at: 123456 } },
         error: null,
       }),
+      signInWithOAuth: vi.fn().mockResolvedValue({ data: {}, error: null }),
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({

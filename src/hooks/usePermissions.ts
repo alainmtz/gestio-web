@@ -1,4 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabase'
+import { useCallback } from 'react'
 
 const PERMISSIONS = {
   PRODUCT_VIEW: 'PRODUCT_VIEW',
@@ -74,6 +76,7 @@ const PERMISSIONS = {
   SETTINGS_ORG: 'SETTINGS_ORG',
   SETTINGS_EXCHANGE: 'SETTINGS_EXCHANGE',
 
+  DASHBOARD_VIEW: 'DASHBOARD_VIEW',
   AUDIT_VIEW: 'AUDIT_VIEW',
   ROLE_MANAGE: 'ROLE_MANAGE',
 } as const
@@ -132,8 +135,8 @@ export const DB_PERMISSION_KEY_MAP: Record<string, string> = {
   'Reportes:sales': 'REPORT_SALES',
   'Reportes:inventory': 'REPORT_INVENTORY',
   'Reportes:financial': 'REPORT_FINANCIAL',
-  'Organización:view': 'ORG_VIEW',
-  'Organización:edit': 'ORG_EDIT',
+  'Organizaci\u00f3n:view': 'ORG_VIEW',
+  'Organizaci\u00f3n:edit': 'ORG_EDIT',
   'Tiendas:view': 'STORE_VIEW',
   'Tiendas:create': 'STORE_CREATE',
   'Tiendas:edit': 'STORE_EDIT',
@@ -141,12 +144,13 @@ export const DB_PERMISSION_KEY_MAP: Record<string, string> = {
   'Miembros:invite': 'MEMBER_INVITE',
   'Miembros:role': 'MEMBER_ROLE',
   'Miembros:remove': 'MEMBER_REMOVE',
-  'Configuración:view': 'SETTINGS_VIEW',
-  'Configuración:profile': 'SETTINGS_PROFILE',
-  'Configuración:org': 'SETTINGS_ORG',
-  'Configuración:exchange': 'SETTINGS_EXCHANGE',
-  'Auditoría:view': 'AUDIT_VIEW',
+  'Configuraci\u00f3n:view': 'SETTINGS_VIEW',
+  'Configuraci\u00f3n:profile': 'SETTINGS_PROFILE',
+  'Configuraci\u00f3n:org': 'SETTINGS_ORG',
+  'Configuraci\u00f3n:exchange': 'SETTINGS_EXCHANGE',
+  'Auditor\u00eda:view': 'AUDIT_VIEW',
   'Roles:manage': 'ROLE_MANAGE',
+  'Dashboard:view': 'DASHBOARD_VIEW',
 }
 
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -192,6 +196,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.TEAM_ASSIGN,
     PERMISSIONS.SCHEDULE_VIEW,
     PERMISSIONS.SCHEDULE_MANAGE,
+    PERMISSIONS.DASHBOARD_VIEW,
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.REPORT_EXPORT,
     PERMISSIONS.REPORT_SALES,
@@ -237,14 +242,74 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 }
 
+// ─── DB fetch ──────────────────────────────────────────────────────────────
+
+export async function fetchRolePermissions(
+  userId: string,
+  organizationId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc('get_role_permissions', {
+    p_user_id: userId,
+    p_organization_id: organizationId,
+  })
+
+  if (error) {
+    console.error('[usePermissions] RPC error:', error.message)
+    throw error
+  }
+
+  const raw = (data as string[]) ?? []
+  const mapped: string[] = []
+  for (const key of raw) {
+    const mappedKey = DB_PERMISSION_KEY_MAP[key]
+    if (mappedKey) mapped.push(mappedKey)
+  }
+  return mapped
+}
+
+// ─── Hook to trigger loading ───────────────────────────────────────────────
+
+export function usePermissionsLoad() {
+  const setPermissions = useAuthStore((s) => s.setPermissions)
+  const setPermissionLoaded = useAuthStore((s) => s.setPermissionLoaded)
+  const setPermissionError = useAuthStore((s) => s.setPermissionError)
+
+  const load = useCallback(
+    async (userId: string, organizationId: string) => {
+      try {
+        const perms = await fetchRolePermissions(userId, organizationId)
+        setPermissions(perms)
+        setPermissionLoaded(true)
+        setPermissionError(false)
+      } catch {
+        setPermissionError(true)
+      }
+    },
+    [setPermissions, setPermissionLoaded, setPermissionError],
+  )
+
+  return { load }
+}
+
 // ─── Dynamic hook ──────────────────────────────────────────────────────────
 
 export function usePermissions() {
-  const role = useAuthStore((state) => state.user?.role ?? 'MEMBER')
+  const storePermissions = useAuthStore((s) => s.permissions)
+  const role = useAuthStore((s) => s.user?.role ?? 'MEMBER')
   const normalizedRole = typeof role === 'string' ? role.toUpperCase() : 'MEMBER'
 
-  const userPermissions: string[] =
+  const staticPerms: string[] =
     ROLE_PERMISSIONS[normalizedRole] ?? ROLE_PERMISSIONS.MEMBER
+
+  // For OWNER/ADMIN, merge DB + static so virtual permissions are never lost
+  // For other roles, use DB permissions exactly (restrictive)
+  const isPrivileged = normalizedRole === 'OWNER' || normalizedRole === 'ADMIN'
+  const userPermissions: string[] =
+    storePermissions.length > 0 && isPrivileged
+      ? [...new Set([...storePermissions, ...staticPerms])]
+      : storePermissions.length > 0
+        ? storePermissions
+        : staticPerms
 
   const hasPermission = (permission: string) => userPermissions.includes(permission)
   const hasAnyPermission = (perms: string[]) => perms.some((p) => userPermissions.includes(p))

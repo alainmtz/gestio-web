@@ -11,11 +11,7 @@ export function AuthCallbackPage() {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/auth/reset-password', { replace: true })
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session?.user?.email_confirmed_at) {
-          navigate('/dashboard', { replace: true })
-        } else {
-          navigate('/auth/login', { replace: true })
-        }
+        handlePostAuth(session)
       } else if (event === 'USER_UPDATED') {
         navigate('/dashboard', { replace: true })
       }
@@ -26,12 +22,34 @@ export function AuthCallbackPage() {
         setError(sessionError.message)
         setTimeout(() => navigate('/auth/login', { replace: true }), 3000)
       } else if (session) {
-        navigate('/dashboard', { replace: true })
+        handlePostAuth(session)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [navigate])
+
+  async function handlePostAuth(session: any) {
+    if (!session?.user) {
+      navigate('/auth/login', { replace: true })
+      return
+    }
+
+    // Check if user already has organization memberships
+    const { data: memberships } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .limit(1)
+
+    if (memberships && memberships.length > 0) {
+      // Existing user — go to dashboard
+      navigate('/dashboard', { replace: true })
+    } else {
+      // New user (likely from Google OAuth) — complete registration
+      navigate('/auth/register?oauth_flow=true', { replace: true })
+    }
+  }
 
   if (error) {
     return (

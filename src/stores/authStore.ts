@@ -39,6 +39,8 @@ interface AuthState {
   permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
+  permissionLoaded: boolean
+  permissionError: boolean
   isSwitchingOrganization: boolean
 }
 
@@ -54,6 +56,8 @@ interface AuthActions {
   login: (user: User, session: { accessToken: string; expiresAt: number }, organizations: Organization[]) => void
   logout: () => void
   setLoading: (loading: boolean) => void
+  setPermissionLoaded: (loaded: boolean) => void
+  setPermissionError: (error: boolean) => void
   setSwitchingOrganization: (switching: boolean) => void
 }
 
@@ -70,6 +74,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       permissions: [],
       isAuthenticated: false,
       isLoading: false,
+      permissionLoaded: false,
+      permissionError: false,
       isSwitchingOrganization: false,
 
       setUser: (user) => set({ user }),
@@ -108,6 +114,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
       
       setLoading: (loading) => set({ isLoading: loading }),
+      setPermissionLoaded: (loaded) => set({ permissionLoaded: loaded }),
+      setPermissionError: (error) => set({ permissionError: error }),
       setSwitchingOrganization: (switching) => set({ isSwitchingOrganization: switching }),
     }),
     {
