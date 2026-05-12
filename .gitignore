@@ -39,3 +39,7 @@ supabase/.branches/
 
 # AI assistant config
 .claude/
+
+# External tool exports (credentials / secrets)
+firebase/
+gcloud_Console/
