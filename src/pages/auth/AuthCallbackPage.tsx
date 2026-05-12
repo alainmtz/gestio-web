@@ -1,12 +1,54 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore, type User, type Organization } from '@/stores/authStore'
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
+  const { login } = useAuthStore()
   const [error, setError] = useState<string>()
+  const processingRef = useRef(false)
 
   useEffect(() => {
+    if (processingRef.current) return
+    processingRef.current = true
+
+    async function handleCallback() {
+      // ── 1. PKCE code exchange (OAuth redirect lands here) ──
+      const queryParams = new URLSearchParams(window.location.search)
+      const code = queryParams.get('code')
+
+      if (code) {
+        const { data: { session }, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code)
+
+        if (exchangeError) {
+          setError(exchangeError.message)
+          setTimeout(() => navigate('/auth/login', { replace: true }), 3000)
+          return
+        }
+
+        if (session?.user) {
+          await handlePostAuth(session)
+          return
+        }
+      }
+
+      // ── 2. Fallback: session already in storage ──
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession()
+
+      if (sessionError) {
+        setError(sessionError.message)
+        setTimeout(() => navigate('/auth/login', { replace: true }), 3000)
+      } else if (session?.user) {
+        await handlePostAuth(session)
+      }
+    }
+
+    handleCallback()
+
+    // ── 3. Backup listener for events that fire after mount ──
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/auth/reset-password', { replace: true })
@@ -17,17 +59,9 @@ export function AuthCallbackPage() {
       }
     })
 
-    supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
-      if (sessionError) {
-        setError(sessionError.message)
-        setTimeout(() => navigate('/auth/login', { replace: true }), 3000)
-      } else if (session) {
-        handlePostAuth(session)
-      }
-    })
-
     return () => subscription.unsubscribe()
-  }, [navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handlePostAuth(session: any) {
     if (!session?.user) {
@@ -38,12 +72,46 @@ export function AuthCallbackPage() {
     // Check if user already has organization memberships
     const { data: memberships } = await supabase
       .from('organization_members')
-      .select('id')
+      .select('organization_id, role')
       .eq('user_id', session.user.id)
-      .limit(1)
 
     if (memberships && memberships.length > 0) {
-      // Existing user — go to dashboard
+      // Existing user — fetch profile & orgs, update store, go to dashboard
+      const [{ data: profileData }, { data: orgsData }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', session.user.id)
+          .maybeSingle(),
+        supabase
+          .from('organizations')
+          .select('*')
+          .in('id', memberships.map(m => m.organization_id))
+          .eq('is_active', true),
+      ])
+
+      const organizations: Organization[] = (orgsData || []).map(org => ({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        taxId: org.tax_id || undefined,
+        plan: org.plan,
+        logoUrl: org.logo_url || undefined,
+      }))
+
+      const user: User = {
+        id: session.user.id,
+        email: session.user.email || '',
+        fullName: profileData?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+        avatarUrl: profileData?.avatar_url || undefined,
+        role: memberships[0]?.role || 'MEMBER',
+      }
+
+      login(user, {
+        accessToken: session.access_token,
+        expiresAt: session.expires_at || Date.now() + 3600000,
+      }, organizations)
+
       navigate('/dashboard', { replace: true })
     } else {
       // New user (likely from Google OAuth) — complete registration
